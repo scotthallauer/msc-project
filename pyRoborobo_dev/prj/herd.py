@@ -15,25 +15,42 @@ def angle_diff(x, y):
   return principal_value(x - y)
 
 def is_shepherd(id, props):
-  return id < props["cMaxRobotNumber"]
+  return id > 0 and id < props["cMaxRobotNumber"]
 
 def is_cattle(id, props):
-  return not is_shepherd(id, props)
+  return id > 0 and not is_shepherd(id, props)
 
 def enforce_bounds(robot):
-  repulse_radius = robot.props["gRobotRepulseRadius"]
+  avoid_radius = robot.props["gRobotWallAvoidanceRadius"]
   camera_dist = robot.get_all_distances()
   camera_wall = robot.get_all_walls()
   camera_angle_rad = robot.get_all_sensor_angles()
   camera_angle_deg = camera_angle_rad * 180 / np.pi
-  for sensor in np.argsort(camera_dist): # get the index from the closest to the farthest
-    if camera_angle_deg[sensor] < -270 or camera_angle_deg[sensor] > 270:
+  for sensor_id in np.argsort(camera_dist): # get the index from the closest to the farthest
+    if camera_angle_deg[sensor_id] < -270 or camera_angle_deg[sensor_id] > 270:
       continue
-    if camera_wall[sensor] and camera_dist[sensor] < repulse_radius:
-      if camera_angle_deg[sensor] != 0:
-        robot.set_rotation(-camera_angle_rad[sensor] / np.pi)
+    if camera_wall[sensor_id] and camera_dist[sensor_id] < avoid_radius:
+      if camera_angle_deg[sensor_id] != 0:
+        robot.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
       else:
         robot.set_rotation(1)
+      break
+
+def avoid_agents(robot):
+  avoid_radius = robot.props["gRobotShepherdAvoidanceRadius"]
+  camera_dist = robot.get_all_distances()
+  camera_robot_id = robot.get_all_robot_ids()
+  camera_angle_rad = robot.get_all_sensor_angles()
+  camera_angle_deg = camera_angle_rad * 180 / np.pi
+  for sensor_id in np.argsort(camera_dist): # get the index from the closest to the farthest
+    if camera_angle_deg[sensor_id] < -270 or camera_angle_deg[sensor_id] > 270:
+      continue
+    if (is_shepherd(camera_robot_id[sensor_id], robot.props) or is_cattle(camera_robot_id[sensor_id], robot.props)) and camera_dist[sensor_id] < avoid_radius:
+      if camera_angle_deg[sensor_id] != 0:
+        robot.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
+      else:
+        robot.set_rotation(1)
+      break
 
 
 
@@ -48,7 +65,8 @@ class AgentController(Controller):
       config.read_string("[root]\n" + stream.read())
     self.props = {}
     self.props["gInitialNumberOfRobots"] = int(config.get("root", "gInitialNumberOfRobots"))
-    self.props["gRobotRepulseRadius"] = float(config.get("root", "gRobotRepulseRadius"))
+    self.props["gRobotWallAvoidanceRadius"] = float(config.get("root", "gRobotWallAvoidanceRadius"))
+    self.props["gRobotShepherdAvoidanceRadius"] = float(config.get("root", "gRobotShepherdAvoidanceRadius"))
     self.props["cMaxRobotNumber"] = int(config.get("root", "cMaxRobotNumber"))
     self.props["cMaxCattleNumber"] = int(config.get("root", "cMaxCattleNumber"))
     if is_shepherd(self.get_id(), self.props):
@@ -79,6 +97,7 @@ class ShepherdController:
   def step(self):
     self.agent.set_translation(0.25)  # Let's go forward
     self.agent.set_rotation(0)
+    avoid_agents(self.agent)
     enforce_bounds(self.agent)
 
 
@@ -90,36 +109,36 @@ class CattleController:
     self.agent.instance = Pyroborobo.get()
     self.agent.set_color(*[0, 255, 0])
     self.agent.camera_max_range = 0
-    self.agent.repulse_radius = 0
     self.agent.orientation_radius = 0
 
   def reset(self):
-    self.agent.repulse_radius = 0.2
     self.agent.orientation_radius = 0.6
 
   def step(self):
     self.agent.set_translation(1)  # Let's go forward
     self.agent.set_rotation(0)
-    camera_dist = self.agent.get_all_distances()
-    camera_id = self.agent.get_all_robot_ids()
-    camera_angle_rad = self.agent.get_all_sensor_angles()
-    camera_angle = camera_angle_rad * 180 / np.pi
-    for i in np.argsort(camera_dist):  # get the index from the closest to the farthest
-      if camera_angle[i] < -270 or camera_angle[i] > 270:
-        continue
-      else:
-        dist = camera_dist[i]
-        if dist < self.agent.repulse_radius:
-          if camera_angle[i] != 0:
-            self.agent.set_rotation(-camera_angle_rad[i] / np.pi)
-          else:
-            self.agent.set_rotation(1)
-        if dist < self.agent.orientation_radius and camera_id[i] != -1 and is_cattle(self.agent.get_robot_id_at(i), self.agent.props):
-          orient_angle = self.agent.get_robot_relative_orientation_at(i)
-          self.agent.set_rotation(orient_angle / np.pi)
-        elif dist < self.agent.camera_max_range and camera_id[i] != -1:
-          self.agent.set_rotation(camera_angle_rad[i] / np.pi)
-        break  # stop
+    avoid_agents(self.agent)
+    enforce_bounds(self.agent)
+    #camera_dist = self.agent.get_all_distances()
+    #camera_id = self.agent.get_all_robot_ids()
+    #camera_angle_rad = self.agent.get_all_sensor_angles()
+    #camera_angle = camera_angle_rad * 180 / np.pi
+    #for i in np.argsort(camera_dist):  # get the index from the closest to the farthest
+    #  if camera_angle[i] < -270 or camera_angle[i] > 270:
+    #    continue
+    #  else:
+    #    dist = camera_dist[i]
+    #    if dist < self.agent.repulse_radius:
+    #      if camera_angle[i] != 0:
+    #        self.agent.set_rotation(-camera_angle_rad[i] / np.pi)
+    #      else:
+    #        self.agent.set_rotation(1)
+    #    if dist < self.agent.orientation_radius and camera_id[i] != -1 and is_cattle(self.agent.get_robot_id_at(i), self.agent.props):
+    #      orient_angle = self.agent.get_robot_relative_orientation_at(i)
+    #      self.agent.set_rotation(orient_angle / np.pi)
+    #    elif dist < self.agent.camera_max_range and camera_id[i] != -1:
+    #      self.agent.set_rotation(camera_angle_rad[i] / np.pi)
+    #    break  # stop
 
 
 
