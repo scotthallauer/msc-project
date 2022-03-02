@@ -21,6 +21,10 @@ def distance(coordsA, coordsB):
     math.pow(coordsA[1] - coordsB[1], 2)
   )
 
+#def decompose_velocity(orientation, translation, rotation):
+  # actual absolute orientation (wrt. east / rightwards -- Clock-wise) -- mapped to [-1,+1]
+  # rotation: positive value means clock-wise rotation.
+
 
 
 def is_shepherd(id, props):
@@ -29,14 +33,14 @@ def is_shepherd(id, props):
 def is_cattle(id, props):
   return id > 0 and not is_shepherd(id, props)
 
-# https://github.com/beneater/boids/blob/master/boids.js
+# https://github.com/beneater/boids/blob/master/boids.js#L71-L93
 def flyTowardsCenter(robot):
   centeringFactor = 0.005
   centerX = 0
   centerY = 0
   numNeighbors = 0
   for controller in robot.instance.controllers:
-    if distance(robot.absolute_position, controller.absolute_position) < robot.props["cSensorRange"]: 
+    if distance(robot.absolute_position, controller.absolute_position) < robot.props["cSensorRange"] and is_cattle(controller.id, robot.props): 
       centerX += controller.absolute_position[0]
       centerY += controller.absolute_position[1]
       numNeighbors += 1
@@ -45,7 +49,18 @@ def flyTowardsCenter(robot):
     centerY = centerY / numNeighbors
     dX = centerX - robot.absolute_position[0]
     dY = centerY - robot.absolute_position[1]
+    if dX != 0:
+      angleTowardsCentre = math.atan(dY/dX)
+      robot.set_rotation((angleTowardsCentre - robot.absolute_orientation) / np.pi)
 
+# https://github.com/beneater/boids/blob/master/boids.js#L116-L138
+#def matchVelocity(robot):
+#  matchingFactor = 0.05 # Adjust by this % of average velocity
+#  avgDX = 0
+#  avgDY = 0
+#  numNeighbors = 0
+#  for controller in robot.instance.controllers:
+#    if distance(robot.absolute_position, controller.absolute_position) < robot.props["cSensorRange"] and is_cattle(controller.id, robot.props): 
 
 class AgentController(Controller):
 
@@ -146,6 +161,8 @@ class CattleController:
   def step(self):
     self.agent.set_translation(1)  # Let's go forward
     self.agent.set_rotation(0)
+
+    flyTowardsCenter(self.agent)
 
     camera_dist = self.agent.get_all_distances()
     camera_wall = self.agent.get_all_walls()
