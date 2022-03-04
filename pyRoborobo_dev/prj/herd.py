@@ -21,52 +21,91 @@ def distance(coordsA, coordsB):
     math.pow(coordsA[1] - coordsB[1], 2)
   )
 
-
-# orientation (in degrees): 0/0.0 = right, 90/0.5 = down, 180/1.0 = left, 270/1.5 = up
+# orientation (in degrees): 0/0.0/-2.0/2.0 = right, 90/0.5/-1.5 = down, 180/1.0/-1.0 = left, 270/1.5/-0.5 = up
 # translation: 1 = max forward, 0 = no movement, -1 = max reverse
 # rotation: 1 = max clockwise, 0 = no rotation, -1 = max counter-clockwise
 # x: right = +, left = -
 # y: up = -, down = +
+def orientation_to_degrees(orientation):
+  if orientation < 0:
+    return 360 - ((-orientation % 2) * 180)
+  else:
+    return (orientation % 2) * 180
+
+# give best rotation for turning towards target orientation
+def rotation_for_target(current_degrees, target_degrees):
+  if current_degrees < target_degrees:
+    delta_clockwise = target_degrees - current_degrees
+    delta_counter_clockwise = 360 - delta_clockwise
+  else:
+    delta_counter_clockwise = current_degrees - target_degrees
+    delta_clockwise = 360 - delta_counter_clockwise
+  if delta_clockwise < delta_counter_clockwise:
+    return 0.1
+  elif delta_counter_clockwise < delta_clockwise:
+    return -0.1
+  else:
+    return 0
+
+def degrees_for_target(current_degrees, target_degrees):
+  if current_degrees < target_degrees:
+    delta_clockwise = target_degrees - current_degrees
+    delta_counter_clockwise = 360 - delta_clockwise
+  else:
+    delta_counter_clockwise = current_degrees - target_degrees
+    delta_clockwise = 360 - delta_counter_clockwise
+  if delta_clockwise < delta_counter_clockwise:
+    return current_degrees + (delta_clockwise / 1000)
+  elif delta_counter_clockwise < delta_clockwise:
+    return current_degrees - (delta_clockwise / 1000)
+  else:
+    return current_degrees
+
 def velocity_to_displacement(orientation, translation):
   dx = 0
   dy = 0
-  orientation = orientation * 180
-  if orientation < 90:
-    dx = translation * math.cos(math.radians(orientation))
-    dy = translation * math.sin(math.radians(orientation))
-  elif orientation < 180:
-    dx = -translation * math.cos(math.radians(180 - orientation))
-    dy = translation * math.sin(math.radians(180 - orientation))
-  elif orientation < 270:
-    dx = -translation * math.cos(math.radians(orientation - 180))
-    dy = -translation * math.sin(math.radians(orientation - 180))
-  else: # orientation < 360
-    dx = translation * math.cos(math.radians(360 - orientation))
-    dy = -translation * math.sin(math.radians(360 - orientation))
+  degrees = orientation_to_degrees(orientation)
+  if degrees < 90:
+    dx = translation * math.cos(math.radians(degrees))
+    dy = translation * math.sin(math.radians(degrees))
+  elif degrees < 180:
+    dx = -translation * math.cos(math.radians(180 - degrees))
+    dy = translation * math.sin(math.radians(180 - degrees))
+  elif degrees < 270:
+    dx = -translation * math.cos(math.radians(degrees - 180))
+    dy = -translation * math.sin(math.radians(degrees - 180))
+  else: # degrees < 360
+    dx = translation * math.cos(math.radians(360 - degrees))
+    dy = -translation * math.sin(math.radians(360 - degrees))
+  epsilon = 1.0e-10
+  if abs(dx) < epsilon:
+    dx = 0
+  if abs(dy) < epsilon:
+    dy = 0
   return (dx, dy)
 
 # does not handle reversing
 def displacement_to_velocity(dx, dy):
-  orientation = 0
+  degrees = 0
   translation = 0
   if dx == 0:
-    orientation = (90 if dy > 0 else 270)
+    degrees = (90 if dy > 0 else 270)
     translation = dy
   elif dy == 0:
-    orientation = (0 if dx > 0 else 180)
+    degrees = (0 if dx > 0 else 180)
     translation = dx
   else:
     angle = math.degrees(math.atan(abs(dy/dx)))
     if dx >= 0 and dy >= 0:
-      orientation = angle
+      degrees = angle
     elif dx < 0 and dy >= 0:
-      orientation = 180 - angle
+      degrees = 180 - angle
     elif dx < 0 and dy < 0:
-      orientation = 180 + angle
+      degrees = 180 + angle
     else: # dx >= 0 and dy < 0
-      orientation = 360 - angle
+      degrees = 360 - angle
     translation = abs(dy) / math.sin(math.radians(angle))
-  return (orientation / 180, translation)
+  return (degrees, translation)
 
 
 def is_shepherd(id, props):
@@ -107,17 +146,18 @@ def matchVelocity(robot):
       avgDX += dx
       avgDY += dy
       numNeighbors += 1
-  if numNeighbors > 0:
+  if numNeighbors > 1:
     avgDX = avgDX / numNeighbors
     avgDY = avgDY / numNeighbors
     dx, dy = velocity_to_displacement(robot.absolute_orientation, robot.translation)
     dx += (avgDX - dx) * matchingFactor
     dy += (avgDY - dy) * matchingFactor
-    orientation, translation = displacement_to_velocity(dx, dy)
+    degrees, translation = displacement_to_velocity(dx, dy)
     if translation != 0:
-      print(str(numNeighbors) + " neighbours: setting orientation = " + str(orientation) + " and translation = " + str(translation))
-      robot.set_absolute_orientation(orientation)
-      robot.set_translation(translation)
+      #if robot.get_id() == 11:
+      #  robot.set_absolute_orientation(1)
+      robot.set_rotation(rotation_for_target(orientation_to_degrees(robot.absolute_orientation), degrees))
+      #robot.set_rotation(orientation_for_target(robot.absolute_orientation, orientation))
 
 class AgentController(Controller):
 
@@ -208,7 +248,10 @@ class CattleController:
   def __init__(self, agent):
     self.agent = agent
     self.agent.instance = Pyroborobo.get()
-    self.agent.set_color(*[0, 255, 0])
+    if self.agent.get_id() == 11:
+      self.agent.set_color(*[255, 0, 0])
+    else:
+      self.agent.set_color(*[0, 255, 0])
     self.agent.camera_max_range = 0
     self.agent.orientation_radius = 0
 
@@ -220,7 +263,7 @@ class CattleController:
     self.agent.set_rotation(0)
 
     flyTowardsCenter(self.agent)
-    #matchVelocity(self.agent)
+    matchVelocity(self.agent)
 
     camera_dist = self.agent.get_all_distances()
     camera_wall = self.agent.get_all_walls()
