@@ -3,64 +3,23 @@ import math
 import numpy as np
 from configparser import ConfigParser
 
-
-
-def principal_value(deg):
-  deg_mod = np.mod(deg, 360)
-  if deg_mod > 180:
-    return deg_mod - 360
-  else:
-    return deg_mod
-
-def angle_diff(x, y):
-  return principal_value(x - y)
-
 def distance(coordsA, coordsB):
   return math.sqrt(
     math.pow(coordsA[0] - coordsB[0], 2) +
     math.pow(coordsA[1] - coordsB[1], 2)
   )
 
-# orientation (in degrees): 0/0.0/-2.0/2.0 = right, 90/0.5/-1.5 = down, 180/1.0/-1.0 = left, 270/1.5/-0.5 = up
-# translation: 1 = max forward, 0 = no movement, -1 = max reverse
-# rotation: 1 = max clockwise, 0 = no rotation, -1 = max counter-clockwise
-# x: right = +, left = -
-# y: up = -, down = +
+# orientation (input/degrees): 0 = right, 90 = down, 180 = left, 270 = up
+# orientation (output/roborobo): -2.0/0.0/2.0 = right, -1.5/0.5 = down, -1.0/1.0 = left, -0.5/1.5 = up
 def orientation_to_degrees(orientation):
   if orientation < 0:
     return 360 - ((-orientation % 2) * 180)
   else:
     return (orientation % 2) * 180
 
-# give best rotation for turning towards target orientation
-def rotation_for_target(current_degrees, target_degrees):
-  if current_degrees < target_degrees:
-    delta_clockwise = target_degrees - current_degrees
-    delta_counter_clockwise = 360 - delta_clockwise
-  else:
-    delta_counter_clockwise = current_degrees - target_degrees
-    delta_clockwise = 360 - delta_counter_clockwise
-  if delta_clockwise < delta_counter_clockwise:
-    return 0.1
-  elif delta_counter_clockwise < delta_clockwise:
-    return -0.1
-  else:
-    return 0
-
-def degrees_for_target(current_degrees, target_degrees):
-  if current_degrees < target_degrees:
-    delta_clockwise = target_degrees - current_degrees
-    delta_counter_clockwise = 360 - delta_clockwise
-  else:
-    delta_counter_clockwise = current_degrees - target_degrees
-    delta_clockwise = 360 - delta_counter_clockwise
-  if delta_clockwise < delta_counter_clockwise:
-    return current_degrees + (delta_clockwise / 1000)
-  elif delta_counter_clockwise < delta_clockwise:
-    return current_degrees - (delta_clockwise / 1000)
-  else:
-    return current_degrees
-
+# translation: 1 = max forward, 0 = no movement, -1 = max reverse
+# x: right = +, left = -
+# y: up = -, down = +
 def velocity_to_displacement(orientation, translation):
   dx = 0
   dy = 0
@@ -107,16 +66,24 @@ def displacement_to_velocity(dx, dy):
     translation = abs(dy) / math.sin(math.radians(angle))
   return (degrees, translation)
 
-
-def is_shepherd(id, props):
-  return id > 0 and id < props["pMaxRobotNumber"]
-
-def is_cattle(id, props):
-  return id > 0 and not is_shepherd(id, props)
+# give best rotation for turning towards target orientation
+# rotation: 1 = max clockwise, 0 = no rotation, -1 = max counter-clockwise
+def rotation_for_target(current_degrees, target_degrees, coherence):
+  if current_degrees < target_degrees:
+    delta_clockwise = target_degrees - current_degrees
+    delta_counter_clockwise = 360 - delta_clockwise
+  else:
+    delta_counter_clockwise = current_degrees - target_degrees
+    delta_clockwise = 360 - delta_counter_clockwise
+  if delta_clockwise < delta_counter_clockwise:
+    return coherence
+  elif delta_counter_clockwise < delta_clockwise:
+    return -coherence
+  else:
+    return 0
 
 # https://github.com/beneater/boids/blob/master/boids.js#L71-L93
 def flyTowardsCenter(robot):
-  centeringFactor = 0.005
   centerX = 0
   centerY = 0
   numNeighbors = 0
@@ -132,11 +99,10 @@ def flyTowardsCenter(robot):
     dY = centerY - robot.absolute_position[1]
     if dX != 0:
       angleTowardsCentre = math.degrees(math.atan(dY/dX))
-      robot.set_rotation(rotation_for_target(orientation_to_degrees(robot.absolute_orientation), angleTowardsCentre))
+      robot.set_rotation(rotation_for_target(orientation_to_degrees(robot.absolute_orientation), angleTowardsCentre, robot.props["cFlockingCoherence"]))
 
 # https://github.com/beneater/boids/blob/master/boids.js#L116-L138
 def matchVelocity(robot):
-  matchingFactor = 0.05 # Adjust by this % of average velocity
   avgDX = 0
   avgDY = 0
   numNeighbors = 0
@@ -150,11 +116,19 @@ def matchVelocity(robot):
     avgDX = avgDX / numNeighbors
     avgDY = avgDY / numNeighbors
     dx, dy = velocity_to_displacement(robot.absolute_orientation, robot.translation)
-    dx += (avgDX - dx) * matchingFactor
-    dy += (avgDY - dy) * matchingFactor
+    dx += (avgDX - dx) * robot.props["cFlockingAlignment"]
+    dy += (avgDY - dy) * robot.props["cFlockingAlignment"]
     degrees, translation = displacement_to_velocity(dx, dy)
     if translation != 0:
-      robot.set_rotation(rotation_for_target(orientation_to_degrees(robot.absolute_orientation), degrees))
+      robot.set_rotation(rotation_for_target(orientation_to_degrees(robot.absolute_orientation), degrees, robot.props["cFlockingCoherence"]))
+
+def is_shepherd(id, props):
+  return id > 0 and id < props["pMaxRobotNumber"]
+
+def is_cattle(id, props):
+  return id > 0 and not is_shepherd(id, props)
+
+
 
 class AgentController(Controller):
 
@@ -176,6 +150,8 @@ class AgentController(Controller):
     self.props["cWallAvoidanceRadius"] = float(config.get("root", "cWallAvoidanceRadius"))
     self.props["cShepherdAvoidanceRadius"] = float(config.get("root", "cShepherdAvoidanceRadius"))
     self.props["cCattleAvoidanceRadius"] = float(config.get("root", "cCattleAvoidanceRadius"))
+    self.props["cFlockingCoherence"] = float(config.get("root", "cFlockingCoherence"))
+    self.props["cFlockingAlignment"] = float(config.get("root", "cFlockingAlignment"))
     self.props["cSensorRange"] = float(config.get("root", "cSensorRange"))
     if is_shepherd(self.get_id(), self.props):
       self.controller = ShepherdController(self)
@@ -195,7 +171,7 @@ class ShepherdController:
   def __init__(self, agent):
     self.agent = agent
     self.agent.instance = Pyroborobo.get()
-    self.agent.set_color(*[0, 0, 255])
+    self.agent.set_color(*[255, 0, 0])
     self.agent.camera_max_range = 0
     self.agent.orientation_radius = 0
 
