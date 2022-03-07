@@ -88,7 +88,7 @@ def flyTowardsCenter(robot):
   centerY = 0
   numNeighbors = 0
   for controller in robot.instance.controllers:
-    if distance(robot.absolute_position, controller.absolute_position) < robot.props["cSensorRange"] and is_cattle(controller.id, robot.props): 
+    if distance(robot.absolute_position, controller.absolute_position) < robot.config.get("cSensorRange", "int") and is_cattle(controller.id, robot.config.get("pMaxRobotNumber", "int")): 
       centerX += controller.absolute_position[0]
       centerY += controller.absolute_position[1]
       numNeighbors += 1
@@ -99,7 +99,7 @@ def flyTowardsCenter(robot):
     dY = centerY - robot.absolute_position[1]
     if dX != 0:
       angleTowardsCentre = math.degrees(math.atan(dY/dX))
-      robot.set_rotation(rotation_for_target(orientation_to_degrees(robot.absolute_orientation), angleTowardsCentre, robot.props["cFlockingCoherence"]))
+      robot.set_rotation(rotation_for_target(orientation_to_degrees(robot.absolute_orientation), angleTowardsCentre, robot.config.get("cFlockingCoherence", "float")))
 
 # https://github.com/beneater/boids/blob/master/boids.js#L116-L138
 def matchVelocity(robot):
@@ -107,7 +107,7 @@ def matchVelocity(robot):
   avgDY = 0
   numNeighbors = 0
   for controller in robot.instance.controllers:
-    if distance(robot.absolute_position, controller.absolute_position) < robot.props["cSensorRange"] and is_cattle(controller.id, robot.props): 
+    if distance(robot.absolute_position, controller.absolute_position) < robot.config.get("cSensorRange", "int") and is_cattle(controller.id, robot.config.get("pMaxRobotNumber", "int")): 
       dx, dy = velocity_to_displacement(controller.absolute_orientation, controller.translation)
       avgDX += dx
       avgDY += dy
@@ -116,44 +116,48 @@ def matchVelocity(robot):
     avgDX = avgDX / numNeighbors
     avgDY = avgDY / numNeighbors
     dx, dy = velocity_to_displacement(robot.absolute_orientation, robot.translation)
-    dx += (avgDX - dx) * robot.props["cFlockingAlignment"]
-    dy += (avgDY - dy) * robot.props["cFlockingAlignment"]
+    dx += (avgDX - dx) * robot.config.get("cFlockingAlignment", "float")
+    dy += (avgDY - dy) * robot.config.get("cFlockingAlignment", "float")
     degrees, translation = displacement_to_velocity(dx, dy)
     if translation != 0:
-      robot.set_rotation(rotation_for_target(orientation_to_degrees(robot.absolute_orientation), degrees, robot.props["cFlockingCoherence"]))
+      robot.set_rotation(rotation_for_target(orientation_to_degrees(robot.absolute_orientation), degrees, robot.config.get("cFlockingCoherence", "float")))
 
-def is_shepherd(id, props):
-  return id > 0 and id < props["pMaxRobotNumber"]
+def is_shepherd(id, maxRobotNumber):
+  return id > 0 and id < maxRobotNumber
 
-def is_cattle(id, props):
-  return id > 0 and not is_shepherd(id, props)
+def is_cattle(id, maxRobotNumber):
+  return id > 0 and not is_shepherd(id, maxRobotNumber)
+
+
+
+class ConfigReader():
+
+  def __init__(self, config_filename):
+    self.config_filename = config_filename
+    self.config_parser = ConfigParser()
+    with open(self.config_filename) as stream:
+      self.config_parser.read_string("[root]\n" + stream.read())
+
+  def get(self, parameter, type):
+    value = self.config_parser.get("root", parameter)
+    if type == "int":
+      return int(value)
+    elif type == "float":
+      return float(value)
+    else:
+      return str(value)
 
 
 
 class AgentController(Controller):
 
   config_filename = "config/herd.properties"
+  props = {}
 
   def __init__(self, world_model):
     Controller.__init__(self, world_model) # mandatory call to super constructor
-    config = ConfigParser()
-    with open(AgentController.config_filename) as stream:
-      config.read_string("[root]\n" + stream.read())
-    self.props = {}
-    self.props["gInitialNumberOfRobots"] = int(config.get("root", "gInitialNumberOfRobots"))
-    self.props["pMaxRobotNumber"] = int(config.get("root", "pMaxRobotNumber"))
-    self.props["pMaxCattleNumber"] = int(config.get("root", "pMaxCattleNumber"))
-    self.props["sWallAvoidanceRadius"] = float(config.get("root", "sWallAvoidanceRadius"))
-    self.props["sShepherdAvoidanceRadius"] = float(config.get("root", "sShepherdAvoidanceRadius"))
-    self.props["sCattleAvoidanceRadius"] = float(config.get("root", "sCattleAvoidanceRadius"))
-    self.props["sSensorRange"] = float(config.get("root", "sSensorRange"))
-    self.props["cWallAvoidanceRadius"] = float(config.get("root", "cWallAvoidanceRadius"))
-    self.props["cShepherdAvoidanceRadius"] = float(config.get("root", "cShepherdAvoidanceRadius"))
-    self.props["cCattleAvoidanceRadius"] = float(config.get("root", "cCattleAvoidanceRadius"))
-    self.props["cFlockingCoherence"] = float(config.get("root", "cFlockingCoherence"))
-    self.props["cFlockingAlignment"] = float(config.get("root", "cFlockingAlignment"))
-    self.props["cSensorRange"] = float(config.get("root", "cSensorRange"))
-    if is_shepherd(self.get_id(), self.props):
+    self.config = ConfigReader(AgentController.config_filename)
+    if is_shepherd(self.get_id(), self.config.get("pMaxRobotNumber", "int")):
       self.controller = ShepherdController(self)
     else:
       self.controller = CattleController(self)
@@ -193,21 +197,21 @@ class ShepherdController:
       if camera_angle_deg[sensor_id] < -270 or camera_angle_deg[sensor_id] > 270:
         continue
       # object is a wall
-      if camera_wall[sensor_id] and camera_dist[sensor_id] < self.agent.props["sWallAvoidanceRadius"]:
+      if camera_wall[sensor_id] and camera_dist[sensor_id] < self.agent.config.get("sWallAvoidanceRadius", "float"):
         if camera_angle_deg[sensor_id] != 0:
           self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
         else:
           self.agent.set_rotation(1)
         break
       # object is a shepherd
-      if is_shepherd(camera_robot_id[sensor_id], self.agent.props) and camera_dist[sensor_id] < self.agent.props["sShepherdAvoidanceRadius"]:
+      if is_shepherd(camera_robot_id[sensor_id], self.agent.config.get("pMaxRobotNumber", "int")) and camera_dist[sensor_id] < self.agent.config.get("sShepherdAvoidanceRadius", "float"):
         if camera_angle_deg[sensor_id] != 0:
           self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
         else:
           self.agent.set_rotation(1)
         break
       # object is a cattle
-      if is_cattle(camera_robot_id[sensor_id], self.agent.props) and camera_dist[sensor_id] < self.agent.props["sCattleAvoidanceRadius"]:
+      if is_cattle(camera_robot_id[sensor_id], self.agent.config.get("pMaxRobotNumber", "int")) and camera_dist[sensor_id] < self.agent.config.get("sCattleAvoidanceRadius", "float"):
         if camera_angle_deg[sensor_id] != 0:
           self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
         else:
@@ -246,21 +250,21 @@ class CattleController:
       if camera_angle_deg[sensor_id] < -270 or camera_angle_deg[sensor_id] > 270:
         continue
       # object is a wall
-      if camera_wall[sensor_id] and camera_dist[sensor_id] < self.agent.props["cWallAvoidanceRadius"]:
+      if camera_wall[sensor_id] and camera_dist[sensor_id] < self.agent.config.get("cWallAvoidanceRadius", "float"):
         if camera_angle_deg[sensor_id] != 0:
           self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
         else:
           self.agent.set_rotation(1)
         break
       # object is a shepherd
-      if is_shepherd(camera_robot_id[sensor_id], self.agent.props) and camera_dist[sensor_id] < self.agent.props["cShepherdAvoidanceRadius"]:
+      if is_shepherd(camera_robot_id[sensor_id], self.agent.config.get("pMaxRobotNumber", "int")) and camera_dist[sensor_id] < self.agent.config.get("cShepherdAvoidanceRadius", "float"):
         if camera_angle_deg[sensor_id] != 0:
           self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
         else:
           self.agent.set_rotation(1)
         break
       # object is a cattle
-      if is_cattle(camera_robot_id[sensor_id], self.agent.props) and camera_dist[sensor_id] < self.agent.props["cCattleAvoidanceRadius"]:
+      if is_cattle(camera_robot_id[sensor_id], self.agent.config.get("pMaxRobotNumber", "int")) and camera_dist[sensor_id] < self.agent.config.get("cCattleAvoidanceRadius", "float"):
         if camera_angle_deg[sensor_id] != 0:
           self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
         else:
@@ -272,5 +276,10 @@ class CattleController:
 if __name__ == "__main__":
   rob = Pyroborobo.create(AgentController.config_filename, controller_class=AgentController)
   rob.start()
+  config = ConfigReader(AgentController.config_filename)
+  landmark = rob.add_landmark()
+  landmark.radius = config.get("pTargetZoneRadius", "int")
+  landmark.set_coordinates(config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int"))
+  landmark.show()
   rob.update(100000)
   rob.close()
