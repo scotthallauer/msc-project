@@ -131,8 +131,8 @@ def flyTowardsCenter(robot):
     dX = centerX - robot.absolute_position[0]
     dY = centerY - robot.absolute_position[1]
     if dX != 0:
-      angleTowardsCentre = math.atan(dY/dX)
-      robot.set_rotation((angleTowardsCentre - robot.absolute_orientation) / np.pi)
+      angleTowardsCentre = math.degrees(math.atan(dY/dX))
+      robot.set_rotation(rotation_for_target(orientation_to_degrees(robot.absolute_orientation), angleTowardsCentre))
 
 # https://github.com/beneater/boids/blob/master/boids.js#L116-L138
 def matchVelocity(robot):
@@ -154,10 +154,7 @@ def matchVelocity(robot):
     dy += (avgDY - dy) * matchingFactor
     degrees, translation = displacement_to_velocity(dx, dy)
     if translation != 0:
-      #if robot.get_id() == 11:
-      #  robot.set_absolute_orientation(1)
       robot.set_rotation(rotation_for_target(orientation_to_degrees(robot.absolute_orientation), degrees))
-      #robot.set_rotation(orientation_for_target(robot.absolute_orientation, orientation))
 
 class AgentController(Controller):
 
@@ -248,10 +245,7 @@ class CattleController:
   def __init__(self, agent):
     self.agent = agent
     self.agent.instance = Pyroborobo.get()
-    if self.agent.get_id() == 11:
-      self.agent.set_color(*[255, 0, 0])
-    else:
-      self.agent.set_color(*[0, 255, 0])
+    self.agent.set_color(*[0, 255, 0])
     self.agent.camera_max_range = 0
     self.agent.orientation_radius = 0
 
