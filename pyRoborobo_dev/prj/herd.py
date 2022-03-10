@@ -134,6 +134,29 @@ def in_target_zone(robot):
 def get_target_zone_dist(robot):
   return max(0, distance(robot.absolute_position, [robot.config.get("pTargetZoneCoordX", "int"), robot.config.get("pTargetZoneCoordY", "int")]) - robot.config.get("pTargetZoneRadius", "int"))
 
+FITNESS_P = 0
+FITNESS_T = 0
+TIME_STEP = 0
+
+def monitor_fitness(instance):
+  global FITNESS_P, FITNESS_T, TIME_STEP
+  gathered_cattle = 0
+  total_cattle = 0
+  for robot in instance.controllers:
+    if is_cattle(robot.get_id(), robot.config.get("pMaxRobotNumber", "int")):
+      total_cattle += 1
+      if in_target_zone(robot):
+        gathered_cattle += 1
+  new_p = gathered_cattle / total_cattle * 100
+  if FITNESS_P < new_p:
+    FITNESS_P = new_p
+    FITNESS_T = TIME_STEP
+
+def get_fitness(instance):
+  return ((FITNESS_P / 100) + ((5000 - FITNESS_T) / 5000)) / 2
+
+
+
 
 class ConfigReader():
 
@@ -238,8 +261,14 @@ class CattleController:
     self.agent.orientation_radius = 0.6
 
   def step(self):
+    global FITNESS_P, FITNESS_T, TIME_STEP
     self.agent.set_translation(1)  # Let's go forward
     self.agent.set_rotation(0)
+
+    if self.agent.get_id() == 11:
+      TIME_STEP += 1
+      monitor_fitness(self.agent.instance)
+      print("fitness = " + str(get_fitness(self.agent.instance)) + " (p = " + str(FITNESS_P) + ", t = " + str(FITNESS_T) + ")")
 
     flyTowardsCenter(self.agent)
     matchVelocity(self.agent)
