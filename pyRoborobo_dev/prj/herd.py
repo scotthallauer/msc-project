@@ -14,7 +14,6 @@ TIME_STEP = 0
 class AgentController(Controller):
 
   config_filename = "config/herd.properties"
-  props = {}
 
   def __init__(self, world_model):
     Controller.__init__(self, world_model) # mandatory call to super constructor
