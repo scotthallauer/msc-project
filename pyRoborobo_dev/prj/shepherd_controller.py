@@ -1,5 +1,6 @@
 import numpy as np
 import functions.categorise as categorise
+import functions.util as util
 
 class ShepherdController:
 
@@ -8,7 +9,6 @@ class ShepherdController:
     self.agent.set_color(*[255, 0, 0])
     self.agent.weights = [np.random.normal(0, 1, (self.nb_inputs(), self.nb_hiddens())),
                           np.random.normal(0, 1, (self.nb_hiddens(), self.nb_outputs()))] 
-    self.agent.tot_weights = np.sum([np.prod(layer.shape) for layer in self.agent.weights])
 
   def nb_inputs(self):
     return (
@@ -23,11 +23,16 @@ class ShepherdController:
   def nb_outputs(self):
     return 2 # translation + rotation
 
+  def nb_weights(self):
+    return np.sum([np.prod(layer.shape) for layer in self.agent.weights])
+
   def get_inputs(self):
     dists = self.agent.get_all_distances()
     is_robots = self.agent.get_all_robot_ids() != -1
     is_walls = self.agent.get_all_walls()
     is_objects = self.agent.get_all_objects() != -1
+
+    bias = [1]
 
     robots_dist = np.where(is_robots, dists, 1)
     walls_dist = np.where(is_walls, dists, 1)
@@ -36,31 +41,45 @@ class ShepherdController:
     landmark_dist = self.agent.get_closest_landmark_dist()
     landmark_orient = self.agent.get_closest_landmark_orientation()
 
-    inputs = np.concatenate([[1], robots_dist, walls_dist, objects_dist, [landmark_dist, landmark_orient]])
+    inputs = np.concatenate([bias, robots_dist, walls_dist, objects_dist, [landmark_dist, landmark_orient]])
     assert(len(inputs) == self.nb_inputs())
     return inputs
 
+  def get_weights(self):
+    return self.agent.weights
+
   def get_flat_weights(self):
     all_layers = []
-    for layer in self.weights:
+    for layer in self.agent.weights:
       all_layers.append(layer.reshape(-1))
     flat_layers = np.concatenate(all_layers)
-    assert (flat_layers.shape == (self.tot_weights,))
+    assert (flat_layers.shape == (self.nb_weights(),))
     return flat_layers
 
-  def evaluate_network(inputs, network):
-    out = np.concatenate([[1], inputs])
-    for elem in network[:-1]:
-        out = np.tanh(out @ elem)
-    out = out @ network[-1]  # linear output for last layer
-    return out
+  def evaluate_network(self, inputs, weights):
+    outputs = inputs
+    for elem in weights[:-1]:
+        outputs = np.tanh(outputs @ elem)
+    outputs = outputs @ weights[-1]  # linear output for last layer
+    # ensure translation output in allowed range
+    if outputs[0] >= 0:
+      outputs[0] = util.clamp(outputs[0], self.agent.config.get("sMinTranslationSpeed", "float"), self.agent.config.get("sMaxTranslationSpeed", "float"))
+    else:
+      outputs[0] = util.clamp(outputs[0], -self.agent.config.get("sMaxTranslationSpeed", "float"), -self.agent.config.get("sMinTranslationSpeed", "float"))
+    # ensure rotation output in allowed range
+    if outputs[1] >= 0:
+      outputs[1] = util.clamp(outputs[1], self.agent.config.get("sMinRotationSpeed", "float"), self.agent.config.get("sMaxRotationSpeed", "float"))
+    else:
+      outputs[1] = util.clamp(outputs[1], -self.agent.config.get("sMaxRotationSpeed", "float"), -self.agent.config.get("sMinRotationSpeed", "float"))
+    return outputs
 
   def reset(self):
     pass
 
   def step(self):
-    self.agent.set_translation(0.25)  # Let's go forward
-    self.agent.set_rotation(0)
+    [translation, rotation] = self.evaluate_network(self.get_inputs(), self.get_weights())
+    self.agent.set_translation(translation)  # Let's go forward
+    self.agent.set_rotation(rotation)
 
     camera_dist = self.agent.get_all_distances()
     camera_wall = self.agent.get_all_walls()
