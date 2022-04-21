@@ -13,7 +13,7 @@ class ShepherdController:
   def nb_inputs(self):
     return (
       1 # bias
-      + self.agent.nb_sensors * 3 # sensor inputs
+      + self.agent.nb_sensors * 4 # sensor inputs
       + 2 # landmark inputs
     )
 
@@ -28,20 +28,22 @@ class ShepherdController:
 
   def get_inputs(self):
     dists = self.agent.get_all_distances()
-    is_robots = self.agent.get_all_robot_ids() != -1
+    robot_ids = self.agent.get_all_robot_ids()
+    max_robots = self.agent.config.get("pMaxRobotNumber", "int")
     is_walls = self.agent.get_all_walls()
     is_objects = self.agent.get_all_objects() != -1
 
     bias = [1]
 
-    robots_dist = np.where(is_robots, dists, 1)
+    shepherds_dist = list(map(lambda i: dists[i] if categorise.is_shepherd(robot_ids[i], max_robots) else 1, range(len(robot_ids))))
+    cattles_dist = list(map(lambda i: dists[i] if categorise.is_cattle(robot_ids[i], max_robots) else 1, range(len(robot_ids))))
     walls_dist = np.where(is_walls, dists, 1)
     objects_dist = np.where(is_objects, dists, 1)
 
     landmark_dist = self.agent.get_closest_landmark_dist()
     landmark_orient = self.agent.get_closest_landmark_orientation()
 
-    inputs = np.concatenate([bias, robots_dist, walls_dist, objects_dist, [landmark_dist, landmark_orient]])
+    inputs = np.concatenate([bias, shepherds_dist, cattles_dist, walls_dist, objects_dist, [landmark_dist, landmark_orient]])
     assert(len(inputs) == self.nb_inputs())
     return inputs
 
@@ -80,35 +82,3 @@ class ShepherdController:
     [translation, rotation] = self.evaluate_network(self.get_inputs(), self.get_weights())
     self.agent.set_translation(translation)  # Let's go forward
     self.agent.set_rotation(rotation)
-
-    camera_dist = self.agent.get_all_distances()
-    camera_wall = self.agent.get_all_walls()
-    camera_robot_id = self.agent.get_all_robot_ids()
-    camera_angle_rad = self.agent.get_all_sensor_angles()
-    camera_angle_deg = camera_angle_rad * 180 / np.pi
-
-    for sensor_id in np.argsort(camera_dist): # get the index from the closest to the farthest
-      # object is out of range
-      if camera_angle_deg[sensor_id] < -270 or camera_angle_deg[sensor_id] > 270:
-        continue
-      # object is a wall
-      if camera_wall[sensor_id] and camera_dist[sensor_id] < self.agent.config.get("sWallAvoidanceRadius", "float"):
-        if camera_angle_deg[sensor_id] != 0:
-          self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
-        else:
-          self.agent.set_rotation(1)
-        break
-      # object is a shepherd
-      if categorise.is_shepherd(camera_robot_id[sensor_id], self.agent.config.get("pMaxRobotNumber", "int")) and camera_dist[sensor_id] < self.agent.config.get("sShepherdAvoidanceRadius", "float"):
-        if camera_angle_deg[sensor_id] != 0:
-          self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
-        else:
-          self.agent.set_rotation(1)
-        break
-      # object is a cattle
-      if categorise.is_cattle(camera_robot_id[sensor_id], self.agent.config.get("pMaxRobotNumber", "int")) and camera_dist[sensor_id] < self.agent.config.get("sCattleAvoidanceRadius", "float"):
-        if camera_angle_deg[sensor_id] != 0:
-          self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
-        else:
-          self.agent.set_rotation(1)
-        break
