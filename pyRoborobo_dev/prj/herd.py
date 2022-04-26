@@ -7,6 +7,7 @@ import functions.categorise as categorise
 
 FITNESS_P = 0
 FITNESS_T = 0
+GENERATIONS = 10
 T_MAX = 5000
 TIME_STEP = 0
 
@@ -24,7 +25,7 @@ class AgentController(Controller):
     else:
       self.controller = CattleController(self)
 
-  def monitor_fitness(self):
+  def monitor_swarm_fitness(self):
     global FITNESS_P, FITNESS_T, TIME_STEP, T_MAX
     gathered_cattle = 0
     total_cattle = 0
@@ -38,7 +39,7 @@ class AgentController(Controller):
       FITNESS_P = new_p
       FITNESS_T = TIME_STEP
 
-  def get_fitness(self):
+  def get_swarm_fitness(self):
     return ((FITNESS_P / 100) + ((T_MAX - FITNESS_T) / T_MAX)) / 2
 
   def reset(self):
@@ -48,7 +49,7 @@ class AgentController(Controller):
     global TIME_STEP
     if self.get_id() == 1:
       TIME_STEP += 1
-      self.monitor_fitness()
+      self.monitor_swarm_fitness()
     self.controller.step()
 
 
@@ -60,5 +61,9 @@ if __name__ == "__main__":
   landmark.radius = config.get("pTargetZoneRadius", "int")
   landmark.set_coordinates(config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int"))
   landmark.show()
-  rob.update(T_MAX) # original = 100000
+  for gen in range(GENERATIONS):
+    print("*" * 10, gen, "*" * 10)
+    stop = rob.update(T_MAX)
+    if stop:
+      break
   rob.close()
