@@ -11,9 +11,11 @@ class CattleController:
   def reset(self):
     pass
 
-  def step(self):
+  def step(self, fitness):
     self.agent.set_translation(1)  # Let's go forward
     self.agent.set_rotation(0)
+
+    fitness.track(self.agent)
 
     boid.fly_towards_center(self.agent)
     boid.match_velocity(self.agent)

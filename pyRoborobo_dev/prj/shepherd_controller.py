@@ -61,7 +61,7 @@ class ShepherdController:
   def evaluate_network(self, inputs, weights):
     outputs = inputs
     for elem in weights[:-1]:
-        outputs = np.tanh(outputs @ elem)
+      outputs = np.tanh(outputs @ elem)
     outputs = outputs @ weights[-1]  # linear output for last layer
     # ensure translation output in allowed range
     if outputs[0] >= 0:
@@ -78,7 +78,10 @@ class ShepherdController:
   def reset(self):
     pass
 
-  def step(self):
+  def step(self, fitness):
     [translation, rotation] = self.evaluate_network(self.get_inputs(), self.get_weights())
     self.agent.set_translation(translation)  # Let's go forward
     self.agent.set_rotation(rotation)
+    #score = fitness.score(self.agent)
+    #if score != 0.5:
+    #  print("Shepherd #" + str(self.agent.id) + ": Fitness = " + str(score))

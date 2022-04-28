@@ -1,13 +1,13 @@
 import math
 
-def distance_between_points(coordsA, coordsB):
+def distance_between_points(coords_a, coords_b):
   return math.sqrt(
-    math.pow(coordsA[0] - coordsB[0], 2) +
-    math.pow(coordsA[1] - coordsB[1], 2)
+    math.pow(coords_a[0] - coords_b[0], 2) +
+    math.pow(coords_a[1] - coords_b[1], 2)
   )
 
-def distance_from_target_zone(robot):
-  return max(0, distance_between_points(robot.absolute_position, [robot.config.get("pTargetZoneCoordX", "int"), robot.config.get("pTargetZoneCoordY", "int")]) - robot.config.get("pTargetZoneRadius", "int"))
+def distance_from_target_zone(robot_coords, target_coords, target_radius):
+  return max(0, distance_between_points(robot_coords, target_coords) - target_radius)
 
 # give best rotation for turning towards target orientation
 # rotation: 1 = max clockwise, 0 = no rotation, -1 = max counter-clockwise

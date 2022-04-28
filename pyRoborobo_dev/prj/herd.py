@@ -2,6 +2,7 @@ from pyroborobo import Pyroborobo, Controller
 from config_reader import ConfigReader
 from cattle_controller import CattleController
 from shepherd_controller import ShepherdController
+from fitness_monitor import FitnessMonitor
 import functions.categorise as categorise
 
 
@@ -46,11 +47,11 @@ class AgentController(Controller):
     self.controller.reset()
 
   def step(self):  # step is called at each time step
-    global TIME_STEP
+    global TIME_STEP, FITNESS
     if self.get_id() == 1:
       TIME_STEP += 1
       self.monitor_swarm_fitness()
-    self.controller.step()
+    self.controller.step(FITNESS)
 
 
 if __name__ == "__main__":
@@ -61,6 +62,13 @@ if __name__ == "__main__":
   landmark.radius = config.get("pTargetZoneRadius", "int")
   landmark.set_coordinates(config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int"))
   landmark.show()
+  FITNESS = FitnessMonitor(
+    rob.controllers, 
+    [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")], 
+    config.get("pTargetZoneRadius", "int"), 
+    config.get("cShepherdAvoidanceRadius", "float"), 
+    config.get("pMaxRobotNumber", "int")
+  )
   for gen in range(GENERATIONS):
     print("*" * 10, gen, "*" * 10)
     stop = rob.update(T_MAX)
