@@ -2,18 +2,16 @@ from pyroborobo import Pyroborobo, Controller
 from config_reader import ConfigReader
 from cattle_controller import CattleController
 from shepherd_controller import ShepherdController
-from fitness_monitor import FitnessMonitor
+from robot_fitness_monitor import RobotFitnessMonitor
+from swarm_fitness_monitor import SwarmFitnessMonitor
 import functions.categorise as categorise
 from scipy.stats import rankdata
 import numpy as np
 import random
 
 
-FITNESS_P = 0
-FITNESS_T = 0
 GENERATIONS = 10
 T_MAX = 5000
-TIME_STEP = 0
 
 
 class AgentController(Controller):
@@ -29,32 +27,14 @@ class AgentController(Controller):
     else:
       self.controller = CattleController(self)
 
-  def monitor_swarm_fitness(self):
-    global FITNESS_P, FITNESS_T, TIME_STEP, T_MAX
-    gathered_cattle = 0
-    total_cattle = 0
-    for robot in self.instance.controllers:
-      if categorise.is_cattle(robot.get_id(), robot.config.get("pMaxRobotNumber", "int")):
-        total_cattle += 1
-        if categorise.in_target_zone(robot):
-          gathered_cattle += 1
-    new_p = gathered_cattle / total_cattle * 100
-    if FITNESS_P < new_p:
-      FITNESS_P = new_p
-      FITNESS_T = TIME_STEP
-
-  def get_swarm_fitness(self):
-    return ((FITNESS_P / 100) + ((T_MAX - FITNESS_T) / T_MAX)) / 2
-
   def reset(self):
     self.controller.reset()
 
   def step(self):  # step is called at each time step
-    global TIME_STEP, FITNESS
+    global ROBOT_FITNESS, SWARM_FITNESS
     if self.get_id() == 1:
-      TIME_STEP += 1
-      self.monitor_swarm_fitness()
-    self.controller.step(FITNESS)
+      SWARM_FITNESS.track()
+    self.controller.step(ROBOT_FITNESS)
 
 
 def get_weights(rob):
@@ -99,12 +79,19 @@ if __name__ == "__main__":
   landmark.radius = config.get("pTargetZoneRadius", "int")
   landmark.set_coordinates(config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int"))
   landmark.show()
-  FITNESS = FitnessMonitor(
+  ROBOT_FITNESS = RobotFitnessMonitor(
     rob.controllers, 
     [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")], 
     config.get("pTargetZoneRadius", "int"), 
     config.get("cShepherdAvoidanceRadius", "float"), 
     config.get("pMaxRobotNumber", "int")
+  )
+  SWARM_FITNESS = SwarmFitnessMonitor(
+    rob.controllers, 
+    [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")], 
+    config.get("pTargetZoneRadius", "int"),
+    config.get("pMaxRobotNumber", "int"),
+    T_MAX
   )
   for gen in range(GENERATIONS):
     print("*" * 10, gen, "*" * 10)
@@ -112,9 +99,12 @@ if __name__ == "__main__":
     if stop:
       break
     weights = get_weights(rob)
-    fitnesses = get_fitnesses(rob, FITNESS)
+    fitnesses = get_fitnesses(rob, ROBOT_FITNESS)
     new_weights = fitprop(weights, fitnesses)
     apply_weights(rob, new_weights)
     reset_positions(rob)
-    FITNESS.reset()
+    ROBOT_FITNESS.report()
+    SWARM_FITNESS.report()
+    ROBOT_FITNESS.reset()
+    SWARM_FITNESS.reset()
   rob.close()
