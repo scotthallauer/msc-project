@@ -50,6 +50,17 @@ class ShepherdController:
   def get_weights(self):
     return self.agent.weights
 
+  def set_weights(self, weights):
+    j = 0
+    for i, elem in enumerate(self.agent.weights):
+      shape = elem.shape
+      size = elem.size
+      self.agent.weights[i] = np.array(weights[j:(j + size)]).reshape(shape)
+      j += size
+    # assert that we have consume all the weights needed
+    assert (j == self.nb_weights())
+    assert (j == len(weights))
+
   def get_flat_weights(self):
     all_layers = []
     for layer in self.agent.weights:

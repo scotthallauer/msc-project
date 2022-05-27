@@ -92,3 +92,9 @@ class FitnessMonitor:
       print("Shepherd #1: Tracking history is " + str(self.history[shepherd_id]))
       print("Shepherd #1: Current p_max is " + str(self.p_max))
       print("Shepherd #1: Current n_max is " + str(self.n_max))
+
+  def reset(self):
+    self.tracking = {}
+    self.history = {}
+    self.p_max = 1
+    self.n_max = 1
