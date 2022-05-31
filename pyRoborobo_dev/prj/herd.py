@@ -10,8 +10,8 @@ import numpy as np
 import random
 
 
-GENERATIONS = 10
-T_MAX = 5000
+GENERATIONS = 1000
+T_MAX = 500
 
 
 class AgentController(Controller):
@@ -91,6 +91,7 @@ if __name__ == "__main__":
     [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")], 
     config.get("pTargetZoneRadius", "int"),
     config.get("pMaxRobotNumber", "int"),
+    config.get("pMaxCattleNumber", "int"),
     T_MAX
   )
   for gen in range(GENERATIONS):
