@@ -1,5 +1,9 @@
+from re import S
 import functions.calculate as calculate
 import functions.categorise as categorise
+
+# TODO: Consider cattle start trajectory and end trajectory (facing in direction towards target zone centre is better than facing away or tangential)
+# TODO: Larger boost or penalty based on percentage of distance from target zone covered between start and end coordinates
 
 class RobotFitnessMonitor:
 
@@ -11,8 +15,8 @@ class RobotFitnessMonitor:
     self.max_robots = max_robots
     self.tracking = {}
     self.history = {}
-    self.c_0 = 1.5
-    self.c_max = 2
+    self.c_p = 10
+    self.c_n = 10
     self.p_max = 1
     self.n_max = 1
 
@@ -24,15 +28,16 @@ class RobotFitnessMonitor:
         if shepherd_id in self.history:
           history = self.history[shepherd_id]
         else:
-          history = {'p': 0, 'n': 0}
+          history = {'p_0': 0, 'p_s': 0, 'n_0': 0, 'n_s': 0}
         print("Shepherd #" + str(shepherd_id) + ": History = " + str(history) + ", Fitness = " + str(self.score(controller)))
 
   def score(self, shepherd):
     if shepherd.id in self.history:
-      p = self.history[shepherd.id]["p"]
-      n = self.history[shepherd.id]["n"]
-      #return (1 + (self.c_0 * p / self.p_max) - ((self.c_max - self.c_0) * n / self.n_max)) / 2
-      return (1 + (p / self.p_max) - (n / self.n_max)) / 2
+      p_0 = self.history[shepherd.id]["p_0"]
+      p_s = self.history[shepherd.id]["p_s"]
+      n_0 = self.history[shepherd.id]["n_0"]
+      n_s = self.history[shepherd.id]["n_s"]
+      return (1 + ((p_0 + self.c_p * p_s) / self.p_max) - ((n_0 + self.c_n * n_s) / self.n_max)) / 2
     else:
       return 0.5
 
@@ -51,8 +56,6 @@ class RobotFitnessMonitor:
           self.start_tracking(shepherd_id, cattle_id, cattle.absolute_position)
 
   def start_tracking(self, shepherd_id, cattle_id, start_coords):
-    #if shepherd_id == 1:
-    #  print("Shepherd #1: Started tracking Cattle #" + str(cattle_id))
     data = {"start": start_coords, "last": start_coords}
     if cattle_id in self.tracking:
       self.tracking[cattle_id][shepherd_id] = data
@@ -60,48 +63,60 @@ class RobotFitnessMonitor:
       self.tracking[cattle_id] = {shepherd_id: data}
 
   def update_tracking(self, shepherd_id, cattle_id, current_coords):
-    #if shepherd_id == 1:
-    #  print("Shepherd #1: Updated tracking Cattle #" + str(cattle_id))
     if cattle_id in self.tracking and shepherd_id in self.tracking[cattle_id]:
       self.tracking[cattle_id][shepherd_id]["last"] = current_coords
 
   def end_tracking(self, shepherd_id, cattle_id):
-    #if shepherd_id == 1:
-    #  print("Shepherd #1: Ended tracking Cattle #" + str(cattle_id))
     if cattle_id in self.tracking and shepherd_id in self.tracking[cattle_id]:
       start_coords = self.tracking[cattle_id][shepherd_id]["start"]
       end_coords = self.tracking[cattle_id][shepherd_id]["last"]
       start_dist = calculate.distance_from_target_zone(start_coords, self.target_coords, self.target_radius)
       end_dist = calculate.distance_from_target_zone(end_coords, self.target_coords, self.target_radius)
       if start_dist > end_dist:
-        self.record_positive_movement(shepherd_id)
+        if end_dist != 0:
+          self.record_regular_positive_movement(shepherd_id)
+        elif end_dist == 0:
+          self.record_super_positive_movement(shepherd_id)
       elif end_dist > start_dist:
-        self.record_negative_movement(shepherd_id)
+        if start_dist != 0:
+          self.record_regular_negative_movement(shepherd_id)
+        elif start_dist == 0:
+          self.record_super_negative_movement(shepherd_id)
       del self.tracking[cattle_id][shepherd_id]
       if len(self.tracking[cattle_id]) == 0:
         del self.tracking[cattle_id]
 
-  def record_positive_movement(self, shepherd_id):
+  def record_regular_positive_movement(self, shepherd_id):
     if shepherd_id in self.history:
-      self.history[shepherd_id]["p"] += 1
+      self.history[shepherd_id]["p_0"] += 1
     else:
-      self.history[shepherd_id] = {"p": 1, "n": 0}
-    self.p_max = max(self.p_max, self.history[shepherd_id]["p"])
-    #if shepherd_id == 1:
-    #  print("Shepherd #1: Tracking history is " + str(self.history[shepherd_id]))
-    #  print("Shepherd #1: Current p_max is " + str(self.p_max))
-    #  print("Shepherd #1: Current n_max is " + str(self.n_max))
+      self.history[shepherd_id] = {"p_0": 1, "p_s": 0, "n_0": 0, "n_s": 0}
+    p = self.history[shepherd_id]["p_0"] + self.c_p * self.history[shepherd_id]["p_s"]
+    self.p_max = max(self.p_max, p)
 
-  def record_negative_movement(self, shepherd_id):
+  def record_super_positive_movement(self, shepherd_id):
     if shepherd_id in self.history:
-      self.history[shepherd_id]["n"] += 1
+      self.history[shepherd_id]["p_s"] += 1
     else:
-      self.history[shepherd_id] = {"p": 0, "n": 1}
-    self.n_max = max(self.n_max, self.history[shepherd_id]["n"])
-    #if shepherd_id == 1:
-    #  print("Shepherd #1: Tracking history is " + str(self.history[shepherd_id]))
-    #  print("Shepherd #1: Current p_max is " + str(self.p_max))
-    #  print("Shepherd #1: Current n_max is " + str(self.n_max))
+      self.history[shepherd_id] = {"p_0": 0, "p_s": 1, "n_0": 0, "n_s": 0}
+    p = self.history[shepherd_id]["p_0"] + self.c_p * self.history[shepherd_id]["p_s"]
+    self.p_max = max(self.p_max, p)
+
+  def record_regular_negative_movement(self, shepherd_id):
+    if shepherd_id in self.history:
+      self.history[shepherd_id]["n_0"] += 1
+    else:
+      self.history[shepherd_id] = {"p_0": 0, "p_s": 0, "n_0": 1, "n_s": 0}
+    n = self.history[shepherd_id]["n_0"] + self.c_n * self.history[shepherd_id]["n_s"]
+    self.n_max = max(self.n_max, n)
+
+  def record_super_negative_movement(self, shepherd_id):
+    if shepherd_id in self.history:
+      self.history[shepherd_id]["n_s"] += 1
+    else:
+      self.history[shepherd_id] = {"p_0": 0, "p_s": 0, "n_0": 0, "n_s": 1}
+    n = self.history[shepherd_id]["n_0"] + self.c_n * self.history[shepherd_id]["n_s"]
+    self.n_max = max(self.n_max, n)
 
   def reset(self):
     self.tracking = {}
