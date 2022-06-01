@@ -2,8 +2,8 @@ from pyroborobo import Pyroborobo, Controller
 from config_reader import ConfigReader
 from cattle_controller import CattleController
 from shepherd_controller import ShepherdController
-from robot_fitness_monitor import RobotFitnessMonitor
-from swarm_fitness_monitor import SwarmFitnessMonitor
+from robot_fitness_monitor import RobotFitnessMonitor1, RobotFitnessMonitor2, RobotFitnessMonitor3
+from swarm_fitness_monitor import SwarmFitnessMonitor1, SwarmFitnessMonitor2
 import functions.categorise as categorise
 from scipy.stats import rankdata
 import numpy as np
@@ -11,7 +11,7 @@ import random
 
 
 GENERATIONS = 1000
-T_MAX = 500
+T_MAX = 1000
 
 
 class AgentController(Controller):
@@ -79,14 +79,14 @@ if __name__ == "__main__":
   landmark.radius = config.get("pTargetZoneRadius", "int")
   landmark.set_coordinates(config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int"))
   landmark.show()
-  ROBOT_FITNESS = RobotFitnessMonitor(
+  ROBOT_FITNESS = RobotFitnessMonitor3(
     rob.controllers, 
     [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")], 
     config.get("pTargetZoneRadius", "int"), 
     config.get("cShepherdAvoidanceRadius", "float"), 
     config.get("pMaxRobotNumber", "int")
   )
-  SWARM_FITNESS = SwarmFitnessMonitor(
+  SWARM_FITNESS = SwarmFitnessMonitor2(
     rob.controllers, 
     [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")], 
     config.get("pTargetZoneRadius", "int"),
@@ -106,6 +106,7 @@ if __name__ == "__main__":
     reset_positions(rob)
     ROBOT_FITNESS.report()
     SWARM_FITNESS.report()
+    #print(SWARM_FITNESS.score())
     ROBOT_FITNESS.reset()
     SWARM_FITNESS.reset()
   rob.close()
