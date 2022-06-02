@@ -11,9 +11,9 @@ class ResultLogger:
       os.makedirs(self.dir)
     self.file = open(self.dir + "/" + self.id + "_" + self.name + ".csv", "a")
     self.file.write(",".join(self.columns) + "\n")
+    self.file.close()
 
   def append(self, values):
+    self.file = open(self.dir + "/" + self.id + "_" + self.name + ".csv", "a")
     self.file.write(",".join(map(str, values)) + "\n")
-
-  def close(self):
     self.file.close()
