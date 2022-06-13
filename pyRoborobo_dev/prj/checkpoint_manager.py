@@ -11,9 +11,11 @@ class CheckpointManager:
     self.shepherds = categorise.get_shepherds(controllers)
     self.cattle = categorise.get_cattle(controllers)
     self.dir = "./results"
+    self.perm_file = self.dir + "/" + self.id + "_checkpoints.json"
+    self.temp_file = self.dir + "/" + self.id + "_checkpoints.tmp"
     if not os.path.exists(self.dir):
       os.makedirs(self.dir)
-    with open(self.dir + "/" + self.id + "_checkpoints.json", "w") as file:
+    with open(self.perm_file, "w") as file:
       data = {
         "metadata": {
           "id": id
@@ -23,7 +25,7 @@ class CheckpointManager:
       json.dump(data, file)
 
   def load(self, generation):
-    with open(self.dir + "/" + self.id + "_checkpoints.json", "r") as file:
+    with open(self.perm_file, "r") as file:
       data = json.load(file)
       for checkpoint in data["checkpoints"]:
         if checkpoint["generation"] == generation:
@@ -33,9 +35,9 @@ class CheckpointManager:
 
   def save(self, generation):
     data = {}
-    with open(self.dir + "/" + self.id + "_checkpoints.json", "r") as file:
+    with open(self.perm_file, "r") as file:
       data = json.load(file)
-    with open(self.dir + "/" + self.id + "_checkpoints.json", "w") as file:
+    with open(self.temp_file, "w") as file:
       checkpoint = {
         "datetime": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "generation": generation,
@@ -45,3 +47,4 @@ class CheckpointManager:
       }
       data["checkpoints"].append(checkpoint)
       json.dump(data, file)
+    os.replace(self.temp_file, self.perm_file)
