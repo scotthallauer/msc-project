@@ -15,14 +15,15 @@ class CheckpointManager:
     self.temp_file = self.dir + "/" + self.id + "_checkpoints.tmp"
     if not os.path.exists(self.dir):
       os.makedirs(self.dir)
-    with open(self.perm_file, "w") as file:
-      data = {
-        "metadata": {
-          "id": id
-        },
-        "checkpoints": []
-      }
-      json.dump(data, file)
+    if not os.path.exists(self.perm_file):
+      with open(self.perm_file, "w") as file:
+        data = {
+          "metadata": {
+            "id": id
+          },
+          "checkpoints": []
+        }
+        json.dump(data, file)
 
   def load(self, generation):
     with open(self.perm_file, "r") as file:
