@@ -3,15 +3,14 @@ from config_reader import ConfigReader
 from cattle_controller import CattleController
 from shepherd_controller import ShepherdController
 from robot_fitness_monitor import RobotFitnessMonitor1, RobotFitnessMonitor2, RobotFitnessMonitor3
-from swarm_fitness_monitor import SwarmFitnessMonitor1, SwarmFitnessMonitor2
+from swarm_fitness_monitor import SwarmFitnessMonitor
+from result_logger import ResultLogger
+from checkpoint_manager import CheckpointManager
 import functions.categorise as categorise
 from scipy.stats import rankdata
 import numpy as np
 import random
-
-
-GENERATIONS = 1000
-T_MAX = 1000
+from time import time
 
 
 class AgentController(Controller):
@@ -39,16 +38,16 @@ class AgentController(Controller):
 
 def get_weights(rob):
   weights = []
-  controllers = [c for c in rob.controllers if categorise.is_shepherd(c.get_id(), c.config.get("pMaxRobotNumber", "int"))]
-  for controller in controllers:
-    weights.append(controller.controller.get_flat_weights())
+  shepherds = categorise.get_shepherds(rob.controllers)
+  for shepherd in shepherds:
+    weights.append(shepherd.controller.get_flat_weights())
   return weights
 
 def get_fitnesses(rob, monitor):
   fitnesses = []
-  controllers = [c for c in rob.controllers if categorise.is_shepherd(c.get_id(), c.config.get("pMaxRobotNumber", "int"))]
-  for controller in controllers:
-    fitnesses.append(monitor.score(controller))
+  shepherds = categorise.get_shepherds(rob.controllers)
+  for shepherd in shepherds:
+    fitnesses.append(monitor.score(shepherd))
   return fitnesses
 
 def fitprop(weights, fitnesses):
@@ -63,15 +62,16 @@ def fitprop(weights, fitnesses):
   return new_weights_mutate
 
 def apply_weights(rob, weights):
-  controllers = [c for c in rob.controllers if categorise.is_shepherd(c.get_id(), c.config.get("pMaxRobotNumber", "int"))]
-  for controller, weight in zip(controllers, weights):
-    controller.controller.set_weights(weight)
+  shepherds = categorise.get_shepherds(rob.controllers)
+  for shepherd, weight in zip(shepherds, weights):
+    shepherd.controller.set_weights(weight)
 
 def reset_positions(rob):
   for controller in rob.controllers:
     controller.set_position(random.randint(0, controller.config.get("gArenaWidth", "int")), random.randint(0, controller.config.get("gArenaHeight", "int")))
 
 if __name__ == "__main__":
+  id = str(int(time())) + "#" + str(random.randint(1000, 9999))
   rob = Pyroborobo.create(AgentController.config_filename, controller_class=AgentController)
   rob.start()
   config = ConfigReader(AgentController.config_filename)
@@ -86,17 +86,12 @@ if __name__ == "__main__":
     config.get("cShepherdAvoidanceRadius", "float"), 
     config.get("pMaxRobotNumber", "int")
   )
-  SWARM_FITNESS = SwarmFitnessMonitor2(
-    rob.controllers, 
-    [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")], 
-    config.get("pTargetZoneRadius", "int"),
-    config.get("pMaxRobotNumber", "int"),
-    config.get("pMaxCattleNumber", "int"),
-    T_MAX
-  )
-  for gen in range(GENERATIONS):
+  SWARM_FITNESS = SwarmFitnessMonitor("CROWD", config, rob.controllers)
+  #FITNESS_LOGGER = ResultLogger(id, "fitness", ["generation", "swarm fitness", "robot fitness"])
+  #CHECKPOINT_MANAGER = CheckpointManager(id, rob.controllers)
+  for gen in range(config.get("pSimulationGenerations", "int")):
     print("*" * 10, gen, "*" * 10)
-    stop = rob.update(T_MAX)
+    stop = rob.update(config.get("pSimulationLifetime", "int"))
     if stop:
       break
     weights = get_weights(rob)
@@ -106,7 +101,9 @@ if __name__ == "__main__":
     reset_positions(rob)
     ROBOT_FITNESS.report()
     SWARM_FITNESS.report()
-    #print(SWARM_FITNESS.score())
+    #FITNESS_LOGGER.append([gen, SWARM_FITNESS.score(), ROBOT_FITNESS.avg_score()])
+    #if gen % 10 == 0:
+    #  CHECKPOINT_MANAGER.save(gen)
     ROBOT_FITNESS.reset()
     SWARM_FITNESS.reset()
   rob.close()
