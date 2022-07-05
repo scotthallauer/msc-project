@@ -2,7 +2,7 @@ from pyroborobo import Pyroborobo, Controller
 from config_reader import ConfigReader
 from cattle_controller import CattleController
 from shepherd_controller import ShepherdController
-from robot_fitness_monitor import RobotFitnessMonitor1, RobotFitnessMonitor2, RobotFitnessMonitor3
+from individual_fitness_monitor import IndividualFitnessMonitor
 from swarm_fitness_monitor import SwarmFitnessMonitor
 from result_logger import ResultLogger
 from checkpoint_manager import CheckpointManager
@@ -30,10 +30,10 @@ class AgentController(Controller):
     self.controller.reset()
 
   def step(self):  # step is called at each time step
-    global ROBOT_FITNESS, SWARM_FITNESS
+    global INDIVIDUAL_FITNESS, SWARM_FITNESS
     if self.get_id() == 1:
       SWARM_FITNESS.track()
-    self.controller.step(ROBOT_FITNESS)
+    self.controller.step(INDIVIDUAL_FITNESS)
 
 
 def get_weights(rob):
@@ -79,13 +79,7 @@ if __name__ == "__main__":
   landmark.radius = config.get("pTargetZoneRadius", "int")
   landmark.set_coordinates(config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int"))
   landmark.show()
-  ROBOT_FITNESS = RobotFitnessMonitor3(
-    rob.controllers, 
-    [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")], 
-    config.get("pTargetZoneRadius", "int"), 
-    config.get("cShepherdAvoidanceRadius", "float"), 
-    config.get("pMaxRobotNumber", "int")
-  )
+  INDIVIDUAL_FITNESS = IndividualFitnessMonitor("SUPDST", config, rob.controllers)
   SWARM_FITNESS = SwarmFitnessMonitor("CROWD", config, rob.controllers)
   #FITNESS_LOGGER = ResultLogger(id, "fitness", ["generation", "swarm fitness", "robot fitness"])
   #CHECKPOINT_MANAGER = CheckpointManager(id, rob.controllers)
@@ -95,15 +89,15 @@ if __name__ == "__main__":
     if stop:
       break
     weights = get_weights(rob)
-    fitnesses = get_fitnesses(rob, ROBOT_FITNESS)
+    fitnesses = get_fitnesses(rob, INDIVIDUAL_FITNESS)
     new_weights = fitprop(weights, fitnesses)
     apply_weights(rob, new_weights)
     reset_positions(rob)
-    ROBOT_FITNESS.report()
+    INDIVIDUAL_FITNESS.report()
     SWARM_FITNESS.report()
-    #FITNESS_LOGGER.append([gen, SWARM_FITNESS.score(), ROBOT_FITNESS.avg_score()])
+    #FITNESS_LOGGER.append([gen, SWARM_FITNESS.score(), INDIVIDUAL_FITNESS.avg_score()])
     #if gen % 10 == 0:
     #  CHECKPOINT_MANAGER.save(gen)
-    ROBOT_FITNESS.reset()
+    INDIVIDUAL_FITNESS.reset()
     SWARM_FITNESS.reset()
   rob.close()

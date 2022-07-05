@@ -4,9 +4,9 @@ class SwarmFitnessMonitor:
 
   def __init__(self, method, config, controllers):
     if method == "CROWD":
-      self.monitor = CrowdSwarmFitnessMonitor(config, controllers)
+      self.monitor = CrowdFitnessMonitor(config, controllers)
     elif method == "DWELL":
-      self.monitor = DwellSwarmFitnessMonitor(config, controllers)
+      self.monitor = DwellFitnessMonitor(config, controllers)
     else:
       raise Exception("Unsupported method code for measuring swarm fitness")
 
@@ -16,7 +16,7 @@ class SwarmFitnessMonitor:
     print("Task performance = " + str(self.monitor.score()))
 
   def score(self):
-    self.monitor.score()
+    return self.monitor.score()
 
   def track(self):
     self.monitor.track()
@@ -25,7 +25,7 @@ class SwarmFitnessMonitor:
     self.monitor.reset()
 
 
-class CrowdSwarmFitnessMonitor:
+class CrowdFitnessMonitor:
 
   def __init__(self, config, controllers):
     self.cattle = [c for c in controllers if categorise.is_cattle(c.get_id(), config.get("pMaxRobotNumber", "int"))]
@@ -59,7 +59,7 @@ class CrowdSwarmFitnessMonitor:
     self.t = 0
 
 
-class DwellSwarmFitnessMonitor:
+class DwellFitnessMonitor:
 
   def __init__(self, config, controllers):
     self.cattle = [c for c in controllers if categorise.is_cattle(c.get_id(), config.get("pMaxRobotNumber", "int"))]

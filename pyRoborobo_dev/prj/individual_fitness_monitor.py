@@ -1,54 +1,80 @@
 import functions.calculate as calculate
 import functions.categorise as categorise
 
-# TODO: Consider cattle start trajectory and end trajectory (facing in direction towards target zone centre is better than facing away or tangential)
+class IndividualFitnessMonitor:
 
-# Fi = (1 + P / Pmax - N / Nmax) / 2
-class RobotFitnessMonitor1:
+  def __init__(self, method, config, controllers):
+    if method == "REGCNT":
+      self.monitor = RegularCountFitnessMonitor(config, controllers)
+    elif method == "SUPCNT":
+      self.monitor = SuperCountFitnessMonitor(config, controllers)
+    elif method == "SUPDST":
+      self.monitor = SuperDistanceFitnessMonitor(config, controllers)
+    else:
+      raise Exception("Unsupported method code for measuring individual fitness")
 
-  def __init__(self, controllers, target_coords, target_radius, avoidance_radius, max_robots):
-    self.controllers = controllers
-    self.target_coords = target_coords
-    self.target_radius = target_radius
-    self.avoidance_radius = avoidance_radius
-    self.max_robots = max_robots
+  def report(self):
+    print("*" * 10, "Individual Fitness Report", "*" * 10)
+    self.monitor.report()
+
+  def score(self, shepherd):
+    return self.monitor.score(shepherd)
+
+  def avg_score(self):
+    return self.monitor.avg_score()
+
+  def track(self, cow):
+    self.monitor.track(cow)
+
+  def reset(self):
+    self.monitor.reset()
+
+
+class RegularCountFitnessMonitor:
+
+  def __init__(self, config, controllers):
+    self.shepherds = [c for c in controllers if categorise.is_shepherd(c.get_id(), config.get("pMaxRobotNumber", "int"))]
+    self.target_coords = [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")]
+    self.target_radius = config.get("pTargetZoneRadius", "int")
+    self.avoidance_radius = config.get("cShepherdAvoidanceRadius", "float")
     self.tracking = {}
     self.history = {}
     self.p_max = 1
     self.n_max = 1
 
   def report(self):
-    print("*" * 10, "Robot Fitness Report", "*" * 10)
-    for controller in self.controllers:
-      if categorise.is_shepherd(controller.id, self.max_robots):
-        shepherd_id = controller.id
-        if shepherd_id in self.history:
-          history = self.history[shepherd_id]
-        else:
-          history = {'p': 0, 'n': 0}
-        print("Shepherd #" + str(shepherd_id) + ": History = " + str(history) + ", Fitness = " + str(self.score(controller)))
+    for shepherd in self.shepherds:
+      if shepherd.id in self.history:
+        history = self.history[shepherd.id]
+      else:
+        history = {'p': 0, 'n': 0}
+      print("Shepherd #" + str(shepherd.id) + ": History = " + str(history) + ", Fitness = " + str(self.score(shepherd)))
 
   def score(self, shepherd):
     if shepherd.id in self.history:
       p = self.history[shepherd.id]["p"]
       n = self.history[shepherd.id]["n"]
+      # Fi = (1 + P / Pmax - N / Nmax) / 2
       return (1 + (p / self.p_max) - (n / self.n_max)) / 2
     else:
       return 0.5
 
-  def track(self, cattle):
-    cattle_id = cattle.id
-    for controller in self.controllers:
-      if categorise.is_shepherd(controller.id, self.max_robots):
-        shepherd_id = controller.id
-        trackable = calculate.distance_between_points(cattle.absolute_position, controller.absolute_position) <= self.avoidance_radius
-        if cattle_id in self.tracking and shepherd_id in self.tracking[cattle_id]:
-          if trackable:
-            self.update_tracking(shepherd_id, cattle_id, cattle.absolute_position)
-          else:
-            self.end_tracking(shepherd_id, cattle_id)
-        elif trackable:
-          self.start_tracking(shepherd_id, cattle_id, cattle.absolute_position)
+  def avg_score(self):
+    total_fitness = 0
+    for shepherd in self.shepherds:
+      total_fitness += self.score(shepherd)
+    return total_fitness / len(self.shepherds)
+
+  def track(self, cow):
+    for shepherd in self.shepherds:
+      trackable = calculate.distance_between_points(cow.absolute_position, shepherd.absolute_position) <= self.avoidance_radius
+      if cow.id in self.tracking and shepherd.id in self.tracking[cow.id]:
+        if trackable:
+          self.update_tracking(shepherd.id, cow.id, cow.absolute_position)
+        else:
+          self.end_tracking(shepherd.id, cow.id)
+      elif trackable:
+        self.start_tracking(shepherd.id, cow.id, cow.absolute_position)
 
   def start_tracking(self, shepherd_id, cattle_id, start_coords):
     data = {"start": start_coords, "last": start_coords}
@@ -95,15 +121,14 @@ class RobotFitnessMonitor1:
     self.p_max = 1
     self.n_max = 1
 
-# Fi = (1 + (P0 + CP * P+) / Pmax - (N0 + CN * N+) / Nmax) / 2
-class RobotFitnessMonitor2:
 
-  def __init__(self, controllers, target_coords, target_radius, avoidance_radius, max_robots):
-    self.controllers = controllers
-    self.target_coords = target_coords
-    self.target_radius = target_radius
-    self.avoidance_radius = avoidance_radius
-    self.max_robots = max_robots
+class SuperCountFitnessMonitor:
+
+  def __init__(self, config, controllers):
+    self.shepherds = [c for c in controllers if categorise.is_shepherd(c.get_id(), config.get("pMaxRobotNumber", "int"))]
+    self.target_coords = [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")]
+    self.target_radius = config.get("pTargetZoneRadius", "int")
+    self.avoidance_radius = config.get("cShepherdAvoidanceRadius", "float")
     self.tracking = {}
     self.history = {}
     self.c_p = 10
@@ -112,15 +137,12 @@ class RobotFitnessMonitor2:
     self.n_max = 1
 
   def report(self):
-    print("*" * 10, "Robot Fitness Report", "*" * 10)
-    for controller in self.controllers:
-      if categorise.is_shepherd(controller.id, self.max_robots):
-        shepherd_id = controller.id
-        if shepherd_id in self.history:
-          history = self.history[shepherd_id]
-        else:
-          history = {'p_0': 0, 'p_s': 0, 'n_0': 0, 'n_s': 0}
-        print("Shepherd #" + str(shepherd_id) + ": History = " + str(history) + ", Fitness = " + str(self.score(controller)))
+    for shepherd in self.shepherds:
+      if shepherd.id in self.history:
+        history = self.history[shepherd.id]
+      else:
+        history = {'p_0': 0, 'p_s': 0, 'n_0': 0, 'n_s': 0}
+      print("Shepherd #" + str(shepherd.id) + ": History = " + str(history) + ", Fitness = " + str(self.score(shepherd)))
 
   def score(self, shepherd):
     if shepherd.id in self.history:
@@ -128,23 +150,27 @@ class RobotFitnessMonitor2:
       p_s = self.history[shepherd.id]["p_s"]
       n_0 = self.history[shepherd.id]["n_0"]
       n_s = self.history[shepherd.id]["n_s"]
+      # Fi = (1 + (P0 + CP * P+) / Pmax - (N0 + CN * N+) / Nmax) / 2
       return (1 + ((p_0 + self.c_p * p_s) / self.p_max) - ((n_0 + self.c_n * n_s) / self.n_max)) / 2
     else:
       return 0.5
 
-  def track(self, cattle):
-    cattle_id = cattle.id
-    for controller in self.controllers:
-      if categorise.is_shepherd(controller.id, self.max_robots):
-        shepherd_id = controller.id
-        trackable = calculate.distance_between_points(cattle.absolute_position, controller.absolute_position) <= self.avoidance_radius
-        if cattle_id in self.tracking and shepherd_id in self.tracking[cattle_id]:
-          if trackable:
-            self.update_tracking(shepherd_id, cattle_id, cattle.absolute_position)
-          else:
-            self.end_tracking(shepherd_id, cattle_id)
-        elif trackable:
-          self.start_tracking(shepherd_id, cattle_id, cattle.absolute_position)
+  def avg_score(self):
+    total_fitness = 0
+    for shepherd in self.shepherds:
+      total_fitness += self.score(shepherd)
+    return total_fitness / len(self.shepherds)
+
+  def track(self, cow):
+    for shepherd in self.shepherds:
+      trackable = calculate.distance_between_points(cow.absolute_position, shepherd.absolute_position) <= self.avoidance_radius
+      if cow.id in self.tracking and shepherd.id in self.tracking[cow.id]:
+        if trackable:
+          self.update_tracking(shepherd.id, cow.id, cow.absolute_position)
+        else:
+          self.end_tracking(shepherd.id, cow.id)
+      elif trackable:
+        self.start_tracking(shepherd.id, cow.id, cow.absolute_position)
 
   def start_tracking(self, shepherd_id, cattle_id, start_coords):
     data = {"start": start_coords, "last": start_coords}
@@ -215,15 +241,14 @@ class RobotFitnessMonitor2:
     self.p_max = 1
     self.n_max = 1
 
-# Fi = (1 + sum(Pi) / Pmax - sum(Ni) / Nmax) / 2
-class RobotFitnessMonitor3:
 
-  def __init__(self, controllers, target_coords, target_radius, avoidance_radius, max_robots):
-    self.controllers = controllers
-    self.target_coords = target_coords
-    self.target_radius = target_radius
-    self.avoidance_radius = avoidance_radius
-    self.max_robots = max_robots
+class SuperDistanceFitnessMonitor:
+
+  def __init__(self, config, controllers):
+    self.shepherds = [c for c in controllers if categorise.is_shepherd(c.get_id(), config.get("pMaxRobotNumber", "int"))]
+    self.target_coords = [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")]
+    self.target_radius = config.get("pTargetZoneRadius", "int")
+    self.avoidance_radius = config.get("cShepherdAvoidanceRadius", "float")
     self.tracking = {}
     self.history = {}
     self.c_p = 100
@@ -232,19 +257,16 @@ class RobotFitnessMonitor3:
     self.n_max = 0.00000001
 
   def report(self):
-    print("*" * 10, "Robot Fitness Report", "*" * 10)
     p_total = 0
     n_total = 0
-    for controller in self.controllers:
-      if categorise.is_shepherd(controller.id, self.max_robots):
-        shepherd_id = controller.id
-        if shepherd_id in self.history:
-          history = self.history[shepherd_id]
-        else:
-          history = {'p_0': 0, 'p_s': 0, 'n_0': 0, 'n_s': 0}
-        p_total += history['p_0']
-        n_total += history['n_0']
-        print("Shepherd #" + str(shepherd_id) + ": History = " + str(history) + ", Fitness = " + str(self.score(controller)))
+    for shepherd in self.shepherds:
+      if shepherd.id in self.history:
+        history = self.history[shepherd.id]
+      else:
+        history = {'p_0': 0, 'p_s': 0, 'n_0': 0, 'n_s': 0}
+      p_total += history['p_0']
+      n_total += history['n_0']
+      print("Shepherd #" + str(shepherd.id) + ": History = " + str(history) + ", Fitness = " + str(self.score(shepherd)))
     print("Total positive distance = " + str(p_total))
     print("Total negative distance = " + str(n_total))
 
@@ -254,23 +276,27 @@ class RobotFitnessMonitor3:
       p_s = self.history[shepherd.id]["p_s"]
       n_0 = self.history[shepherd.id]["n_0"]
       n_s = self.history[shepherd.id]["n_s"]
+      # Fi = (1 + sum(Pi) / Pmax - sum(Ni) / Nmax) / 2
       return (1 + ((p_0 + self.c_p * p_s) / self.p_max) - ((n_0 + self.c_n * n_s) / self.n_max)) / 2
     else:
       return 0.5
 
-  def track(self, cattle):
-    cattle_id = cattle.id
-    for controller in self.controllers:
-      if categorise.is_shepherd(controller.id, self.max_robots):
-        shepherd_id = controller.id
-        trackable = calculate.distance_between_points(cattle.absolute_position, controller.absolute_position) <= self.avoidance_radius
-        if cattle_id in self.tracking and shepherd_id in self.tracking[cattle_id]:
-          if trackable:
-            self.update_tracking(shepherd_id, cattle_id, cattle.absolute_position)
-          else:
-            self.end_tracking(shepherd_id, cattle_id)
-        elif trackable:
-          self.start_tracking(shepherd_id, cattle_id, cattle.absolute_position)
+  def avg_score(self):
+    total_fitness = 0
+    for shepherd in self.shepherds:
+      total_fitness += self.score(shepherd)
+    return total_fitness / len(self.shepherds)
+
+  def track(self, cow):
+    for shepherd in self.shepherds:
+      trackable = calculate.distance_between_points(cow.absolute_position, shepherd.absolute_position) <= self.avoidance_radius
+      if cow.id in self.tracking and shepherd.id in self.tracking[cow.id]:
+        if trackable:
+          self.update_tracking(shepherd.id, cow.id, cow.absolute_position)
+        else:
+          self.end_tracking(shepherd.id, cow.id)
+      elif trackable:
+        self.start_tracking(shepherd.id, cow.id, cow.absolute_position)
 
   def start_tracking(self, shepherd_id, cattle_id, start_coords):
     data = {"start": start_coords, "last": start_coords}
@@ -343,3 +369,6 @@ class RobotFitnessMonitor3:
     self.history = {}
     self.p_max = 0.00000001
     self.n_max = 0.00000001
+
+
+# TODO: Consider cattle start trajectory and end trajectory (facing in direction towards target zone centre is better than facing away or tangential)
