@@ -10,6 +10,7 @@ class ConfigReader():
 
   def get(self, parameter, type):
     value = self.config_parser.get("root", parameter)
+    value = value.split("#")[0].strip()
     if type == "int":
       return int(value)
     elif type == "float":

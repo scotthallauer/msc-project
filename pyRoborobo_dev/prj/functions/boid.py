@@ -9,7 +9,7 @@ def fly_towards_center(robot):
   centerY = 0
   numNeighbors = 0
   for controller in robot.instance.controllers:
-    if calculate.distance_between_points(robot.absolute_position, controller.absolute_position) < robot.config.get("cSensorRange", "int") and categorise.is_cattle(controller.id, robot.config.get("pMaxRobotNumber", "int")): 
+    if calculate.distance_between_points(robot.absolute_position, controller.absolute_position) < robot.config.get("cSensorRange", "int") and categorise.is_cattle(controller.id, robot.config.get("pRobotNumber", "int")): 
       centerX += controller.absolute_position[0]
       centerY += controller.absolute_position[1]
       numNeighbors += 1
@@ -28,7 +28,7 @@ def match_velocity(robot):
   avgDY = 0
   numNeighbors = 0
   for controller in robot.instance.controllers:
-    if calculate.distance_between_points(robot.absolute_position, controller.absolute_position) < robot.config.get("cSensorRange", "int") and categorise.is_cattle(controller.id, robot.config.get("pMaxRobotNumber", "int")): 
+    if calculate.distance_between_points(robot.absolute_position, controller.absolute_position) < robot.config.get("cSensorRange", "int") and categorise.is_cattle(controller.id, robot.config.get("pRobotNumber", "int")): 
       dx, dy = convert.velocity_to_displacement(controller.absolute_orientation, controller.translation)
       avgDX += dx
       avgDY += dy

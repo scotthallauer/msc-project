@@ -29,7 +29,7 @@ class ShepherdController:
   def get_inputs(self):
     dists = self.agent.get_all_distances()
     robot_ids = self.agent.get_all_robot_ids()
-    max_robots = self.agent.config.get("pMaxRobotNumber", "int")
+    max_robots = self.agent.config.get("pRobotNumber", "int")
     is_walls = self.agent.get_all_walls()
     is_objects = self.agent.get_all_objects() != -1
 

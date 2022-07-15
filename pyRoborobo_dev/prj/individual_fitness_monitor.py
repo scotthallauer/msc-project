@@ -33,7 +33,7 @@ class IndividualFitnessMonitor:
 class RegularCountFitnessMonitor:
 
   def __init__(self, config, controllers):
-    self.shepherds = [c for c in controllers if categorise.is_shepherd(c.get_id(), config.get("pMaxRobotNumber", "int"))]
+    self.shepherds = [c for c in controllers if categorise.is_shepherd(c.get_id(), config.get("pRobotNumber", "int"))]
     self.target_coords = [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")]
     self.target_radius = config.get("pTargetZoneRadius", "int")
     self.avoidance_radius = config.get("cShepherdAvoidanceRadius", "float")
@@ -125,7 +125,7 @@ class RegularCountFitnessMonitor:
 class SuperCountFitnessMonitor:
 
   def __init__(self, config, controllers):
-    self.shepherds = [c for c in controllers if categorise.is_shepherd(c.get_id(), config.get("pMaxRobotNumber", "int"))]
+    self.shepherds = [c for c in controllers if categorise.is_shepherd(c.get_id(), config.get("pRobotNumber", "int"))]
     self.target_coords = [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")]
     self.target_radius = config.get("pTargetZoneRadius", "int")
     self.avoidance_radius = config.get("cShepherdAvoidanceRadius", "float")
@@ -245,7 +245,7 @@ class SuperCountFitnessMonitor:
 class SuperDistanceFitnessMonitor:
 
   def __init__(self, config, controllers):
-    self.shepherds = [c for c in controllers if categorise.is_shepherd(c.get_id(), config.get("pMaxRobotNumber", "int"))]
+    self.shepherds = [c for c in controllers if categorise.is_shepherd(c.get_id(), config.get("pRobotNumber", "int"))]
     self.target_coords = [config.get("pTargetZoneCoordX", "int"), config.get("pTargetZoneCoordY", "int")]
     self.target_radius = config.get("pTargetZoneRadius", "int")
     self.avoidance_radius = config.get("cShepherdAvoidanceRadius", "float")

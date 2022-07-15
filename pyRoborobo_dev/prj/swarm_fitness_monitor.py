@@ -28,7 +28,7 @@ class SwarmFitnessMonitor:
 class CrowdFitnessMonitor:
 
   def __init__(self, config, controllers):
-    self.cattle = [c for c in controllers if categorise.is_cattle(c.get_id(), config.get("pMaxRobotNumber", "int"))]
+    self.cattle = [c for c in controllers if categorise.is_cattle(c.get_id(), config.get("pRobotNumber", "int"))]
     self.time_step = 0
     self.p = 0
     self.t = 0
@@ -62,7 +62,7 @@ class CrowdFitnessMonitor:
 class DwellFitnessMonitor:
 
   def __init__(self, config, controllers):
-    self.cattle = [c for c in controllers if categorise.is_cattle(c.get_id(), config.get("pMaxRobotNumber", "int"))]
+    self.cattle = [c for c in controllers if categorise.is_cattle(c.get_id(), config.get("pRobotNumber", "int"))]
     self.t = 0
     self.t_max = config.get("pSimulationLifetime", "int")
 

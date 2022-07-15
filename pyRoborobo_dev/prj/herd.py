@@ -21,7 +21,7 @@ class AgentController(Controller):
     Controller.__init__(self, world_model) # mandatory call to super constructor
     self.instance = Pyroborobo.get()
     self.config = ConfigReader(AgentController.config_filename)
-    if categorise.is_shepherd(self.get_id(), self.config.get("pMaxRobotNumber", "int")):
+    if categorise.is_shepherd(self.get_id(), self.config.get("pRobotNumber", "int")):
       self.controller = ShepherdController(self)
     else:
       self.controller = CattleController(self)

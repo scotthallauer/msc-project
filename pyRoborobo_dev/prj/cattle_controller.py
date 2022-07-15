@@ -38,14 +38,14 @@ class CattleController:
           self.agent.set_rotation(1)
         break
       # object is a shepherd
-      if categorise.is_shepherd(camera_robot_id[sensor_id], self.agent.config.get("pMaxRobotNumber", "int")) and camera_dist[sensor_id] < self.agent.config.get("cShepherdAvoidanceRadius", "float"):
+      if categorise.is_shepherd(camera_robot_id[sensor_id], self.agent.config.get("pRobotNumber", "int")) and camera_dist[sensor_id] < self.agent.config.get("cShepherdAvoidanceRadius", "float"):
         if camera_angle_deg[sensor_id] != 0:
           self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
         else:
           self.agent.set_rotation(1)
         break
       # object is a cattle
-      if categorise.is_cattle(camera_robot_id[sensor_id], self.agent.config.get("pMaxRobotNumber", "int")) and camera_dist[sensor_id] < self.agent.config.get("cCattleAvoidanceRadius", "float"):
+      if categorise.is_cattle(camera_robot_id[sensor_id], self.agent.config.get("pRobotNumber", "int")) and camera_dist[sensor_id] < self.agent.config.get("cCattleAvoidanceRadius", "float"):
         if camera_angle_deg[sensor_id] != 0:
           self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
         else:
