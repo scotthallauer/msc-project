@@ -16,7 +16,7 @@ def crossover(method, child_id, parent_genome1, parent_genome2):
   elif method == "double":
     cut1 = random.randint(1, n - 2)
     cut2 = random.randint(cut1 + 1, n - 1)
-    if random.randint(0,1) == 0:
+    if random.randint(0, 1) == 0:
       weights3 = weights1[:cut1:] + weights2[cut1:cut2] + weights1[cut2:]
     else:
       weights3 = weights2[:cut1:] + weights1[cut1:cut2] + weights2[cut2:]
@@ -34,7 +34,7 @@ def crossover(method, child_id, parent_genome1, parent_genome2):
   return genome
 
 # reference: https://www.tutorialspoint.com/genetic_algorithms/genetic_algorithms_mutation.htm
-def mutate(method, child_id, parent_genome, probability):
+def mutation(method, child_id, parent_genome, probability):
   assert probability > 0 and probability <= 1
   weights = parent_genome.get_flat_weights()
   dimensions = parent_genome.get_dimensions()

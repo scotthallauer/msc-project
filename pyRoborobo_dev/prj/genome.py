@@ -4,7 +4,7 @@ class Genome:
 
   def __init__(self, id, nb_inputs, nb_hiddens, nb_outputs):
     self.id = id
-    self.fitness_history = []
+    self.fitness = None
     self.weights = None
     self.nb_inputs = nb_inputs
     self.nb_hiddens = nb_hiddens
@@ -41,20 +41,15 @@ class Genome:
 
   def evaluate_network(self, inputs):
     assert len(inputs) == self.nb_inputs
+    assert self.weights is not None
     outputs = inputs
     for elem in self.weights[:-1]:
       outputs = np.tanh(outputs @ elem)
     outputs = outputs @ self.weights[-1]  # linear output for last layer
     return outputs # note that outputs are not constrained to a particular range (use util.clamp for range constraints)
   
-  def add_fitness(self, score):
-    self.fitness_history.append(score)
+  def set_fitness(self, score):
+    self.fitness = score
 
   def get_fitness(self):
-    if self.has_fitness():
-      return sum(self.fitness_history) / len(self.fitness_history)
-    else:
-      return -1
-
-  def has_fitness(self):
-    return len(self.fitness_history) != 0
+    return self.fitness
