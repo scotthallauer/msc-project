@@ -17,9 +17,9 @@ def crossover(method, child_id, parent_genome1, parent_genome2):
     cut1 = random.randint(1, n - 2)
     cut2 = random.randint(cut1 + 1, n - 1)
     if random.randint(0, 1) == 0:
-      weights3 = weights1[:cut1:] + weights2[cut1:cut2] + weights1[cut2:]
+      weights3 = weights1[:cut1] + weights2[cut1:cut2] + weights1[cut2:]
     else:
-      weights3 = weights2[:cut1:] + weights1[cut1:cut2] + weights2[cut2:]
+      weights3 = weights2[:cut1] + weights1[cut1:cut2] + weights2[cut2:]
   elif method == "uniform":
     weights3 = []
     for i in range(n):

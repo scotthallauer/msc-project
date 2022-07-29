@@ -23,6 +23,9 @@ class EvolutionManager:
   def propagate(self):
     self.manager.propagate()
 
+  def report(self):
+    self.manager.report()
+
 
 class SSEvolutionManager:
 
@@ -47,6 +50,8 @@ class SSEvolutionManager:
       self.children.remove(genome)
       self.parents.append(genome)
       self.parents.sort(key = lambda genome: genome.get_fitness(), reverse = True)
+    if len(self.parents) > self.max_genomes:
+      del self.parents[-1]
 
   def propagate(self):
     if len(self.parents) >= 2:
@@ -73,7 +78,12 @@ class SSEvolutionManager:
     child_genome = genetic.mutation("bitflip", child_id, child_genome, 0.05)
     self.children.append(child_genome)
     
-
+  def report(self):
+    print("*" * 10, "Evolution Manager Report", "*" * 10)
+    print("Genome Pool Size: " + str(len(self.parents)))
+    if len(self.parents) > 0:
+      print("Highest Fitness: " + str(self.parents[0].get_fitness()) + "(#" + str(self.parents[0].get_id()) + ")")
+      print("Lowest Fitness: " + str(self.parents[-1].get_fitness()) + "(#" + str(self.parents[-1].get_id()) + ")")
       
 
 

@@ -7,8 +7,7 @@ class ShepherdController:
   def __init__(self, agent):
     self.agent = agent
     self.agent.set_color(*[255, 0, 0])
-    self.agent.weights = [np.random.normal(0, 1, (self.nb_inputs(), self.nb_hiddens())),
-                          np.random.normal(0, 1, (self.nb_hiddens(), self.nb_outputs()))] 
+    self.agent.genome = None
 
   def nb_inputs(self):
     return (
@@ -23,8 +22,8 @@ class ShepherdController:
   def nb_outputs(self):
     return 2 # translation + rotation
 
-  def nb_weights(self):
-    return np.sum([np.prod(layer.shape) for layer in self.agent.weights])
+  def get_dimensions(self):
+    return (self.nb_inputs(), self.nb_hiddens(), self.nb_outputs())
 
   def get_inputs(self):
     dists = self.agent.get_all_distances()
@@ -47,33 +46,14 @@ class ShepherdController:
     assert(len(inputs) == self.nb_inputs())
     return inputs
 
-  def get_weights(self):
-    return self.agent.weights
+  def get_genome(self):
+    return self.agent.genome
 
-  def set_weights(self, weights):
-    j = 0
-    for i, elem in enumerate(self.agent.weights):
-      shape = elem.shape
-      size = elem.size
-      self.agent.weights[i] = np.array(weights[j:(j + size)]).reshape(shape)
-      j += size
-    # assert that we have consume all the weights needed
-    assert (j == self.nb_weights())
-    assert (j == len(weights))
+  def set_genome(self, genome):
+    self.agent.genome = genome
 
-  def get_flat_weights(self):
-    all_layers = []
-    for layer in self.agent.weights:
-      all_layers.append(layer.reshape(-1))
-    flat_layers = np.concatenate(all_layers)
-    assert (flat_layers.shape == (self.nb_weights(),))
-    return flat_layers
-
-  def evaluate_network(self, inputs, weights):
-    outputs = inputs
-    for elem in weights[:-1]:
-      outputs = np.tanh(outputs @ elem)
-    outputs = outputs @ weights[-1]  # linear output for last layer
+  def run_genome(self):
+    outputs = self.agent.genome.evaluate_network(self.get_inputs())
     # ensure translation output in allowed range
     if outputs[0] >= 0:
       outputs[0] = util.clamp(outputs[0], self.agent.config.get("sMinTranslationSpeed", "float"), self.agent.config.get("sMaxTranslationSpeed", "float"))
@@ -90,7 +70,7 @@ class ShepherdController:
     pass
 
   def step(self, fitness):
-    [translation, rotation] = self.evaluate_network(self.get_inputs(), self.get_weights())
+    [translation, rotation] = self.run_genome()
     self.agent.set_translation(translation)  # Let's go forward
     self.agent.set_rotation(rotation)
     #score = fitness.score(self.agent)

@@ -32,7 +32,7 @@ class Genome:
       all_layers.append(layer.reshape(-1))
     flat_layers = np.concatenate(all_layers)
     assert (flat_layers.shape == (self.nb_weights(),))
-    return flat_layers
+    return flat_layers.tolist()
 
   def set_flat_weights(self, weights):
     self.weights = []
