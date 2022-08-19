@@ -8,6 +8,7 @@ class ShepherdController:
     self.agent = agent
     self.agent.set_color(*[255, 0, 0])
     self.agent.genome = None
+    self.logged = False
 
   def nb_inputs(self):
     return (
@@ -34,15 +35,16 @@ class ShepherdController:
 
     bias = [1]
 
-    shepherds_dist = list(map(lambda i: dists[i] if categorise.is_shepherd(robot_ids[i], max_robots) else 1, range(len(robot_ids))))
-    cattles_dist = list(map(lambda i: dists[i] if categorise.is_cattle(robot_ids[i], max_robots) else 1, range(len(robot_ids))))
-    walls_dist = np.where(is_walls, dists, 1)
-    objects_dist = np.where(is_objects, dists, 1)
+    shepherds_dist = list(map(lambda i: dists[i] if categorise.is_shepherd(robot_ids[i], max_robots) else 0, range(len(robot_ids))))
+    cattles_dist = list(map(lambda i: dists[i] if categorise.is_cattle(robot_ids[i], max_robots) else 0, range(len(robot_ids))))
+    walls_dist = np.where(is_walls, dists, 0)
+    objects_dist = np.where(is_objects, dists, 0)
 
     landmark_dist = self.agent.get_closest_landmark_dist()
     landmark_orient = self.agent.get_closest_landmark_orientation()
 
-    inputs = np.concatenate([bias, shepherds_dist, cattles_dist, walls_dist, objects_dist, [landmark_dist, landmark_orient]])
+    #inputs = np.concatenate([bias, shepherds_dist, cattles_dist, walls_dist, objects_dist, [landmark_dist, landmark_orient]])
+    inputs = np.concatenate((bias, shepherds_dist, cattles_dist, walls_dist, objects_dist, [landmark_dist, landmark_orient]))
     assert(len(inputs) == self.nb_inputs())
     return inputs
 

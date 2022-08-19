@@ -13,6 +13,8 @@ class EvolutionManager:
   def __init__(self, method, config, dimensions):
     if method == "SSGA":
       self.manager = SSEvolutionManager(config, dimensions)
+    elif method == "NSGA":
+      self.manager = NSEvolutionManager(config, dimensions)
 
   def select(self, n):
     return self.manager.select(n)
@@ -87,7 +89,24 @@ class SSEvolutionManager:
       
 
 
-#class NSEvolutionManager:
+class NSEvolutionManager:
+
+  def __init__(self, config, dimensions):
+    self.ss_manager = SSEvolutionManager(config, dimensions)
+
+  def select(self, n):
+    while len(self.ss_manager.children) < n:
+      self.propagate()
+    return self.ss_manager.children[0:n]
+
+  def assess(self, id, score):
+    self.ss_manager.assess(id, score)
+
+  def propagate(self):
+    self.ss_manager.propagate()
+
+  def report(self):
+    self.ss_manager.report()
 
 
 #class EDQDEvolutionManager:
