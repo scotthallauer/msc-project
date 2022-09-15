@@ -44,7 +44,7 @@ class CheckpointManager:
         "generation": generation,
         "nb_shepherds": len(self.shepherds),
         "nb_cattle": len(self.cattle),
-        "weights": [s.controller.get_flat_weights().tolist() for s in self.shepherds]
+        "weights": [s.controller.get_genome().get_flat_weights() for s in self.shepherds]
       }
       data["checkpoints"].append(checkpoint)
       json.dump(data, file)
