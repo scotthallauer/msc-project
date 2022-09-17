@@ -1,6 +1,7 @@
 from pyroborobo import Pyroborobo
 from deap import base, creator, tools
 from controller.base import BaseController
+from time import time
 import util.categorise as categorise
 import numpy as np
 import globals
@@ -59,7 +60,11 @@ if __name__ == "__main__":
     RUN_TYPE = "resume" if sys.argv[1] == "-r" else "start"
     # start a new evolution simulation
     if RUN_TYPE == "start":
-      globals.init(_config_filename=sys.argv[2])
+      if len(sys.argv) == 4:
+        run_id = sys.argv[3]
+      else:
+        run_id = str(int(time()))
+      globals.init(_config_filename=sys.argv[2], _run_id=run_id)
       population = toolbox.population(n=globals.config.get("pPopulationSize", "int"))
       start_gen = 0
       halloffame = tools.HallOfFame(maxsize=1)
@@ -69,7 +74,7 @@ if __name__ == "__main__":
       CHECKPOINT_FILENAME = sys.argv[2]
       with open(CHECKPOINT_FILENAME, "rb") as cp_file:
         cp = pickle.load(cp_file)
-      globals.init(_config_filename=cp["configfile"])
+      globals.init(_config_filename=cp["configfile"], _run_id=cp["rid"])
       population = cp["population"]
       start_gen = cp["generation"]
       halloffame = cp["halloffame"]
@@ -77,7 +82,7 @@ if __name__ == "__main__":
       random.setstate(cp["rndstate"])
   except:
     print("*" * 10, "Usage Instructions", "*" * 10)
-    print("Start Simulation:\tpython run.py -s <config file>")
+    print("Start Simulation:\tpython run.py -s <config file> <run id>")
     print("Resume Simulation:\tpython run.py -r <checkpoint file>")
     exit(1)
 
@@ -132,11 +137,19 @@ if __name__ == "__main__":
     #globals.swarm_fitness_monitor.report()
 
     if generation % globals.config.get("pCheckpointInterval", "int") == 0:
-      cp = dict(population=population, generation=generation, halloffame=halloffame, logbook=logbook, rndstate=random.getstate(), configfile=globals.config_filename)
-      cp_dir = "./checkpoints"
+      cp = dict(
+        rid=globals.run_id,
+        population=population, 
+        generation=generation, 
+        halloffame=halloffame, 
+        logbook=logbook, 
+        rndstate=random.getstate(), 
+        configfile=globals.config_filename
+      )
+      cp_dir = "./output/run_" + globals.run_id + "/checkpoints"
       if not os.path.exists(cp_dir):
         os.makedirs(cp_dir)
-      with open(cp_dir + "/checkpoint" + globals.run_id + ".pkl", "wb") as cp_file:
+      with open(cp_dir + "/gen_" + str(generation) + ".pkl", "wb") as cp_file:
         pickle.dump(cp, cp_file)
 
     # reset fitness monitors
