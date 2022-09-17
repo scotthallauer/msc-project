@@ -20,3 +20,11 @@ def set_simulator(_simulator):
   simulator = _simulator
   individual_fitness_monitor = IndividualFitnessMonitor(config.get("pIndividualFitnessAlgorithm", "str"), _simulator.controllers)
   swarm_fitness_monitor = SwarmFitnessMonitor(config.get("pSwarmFitnessAlgorithm", "str"), _simulator.controllers)
+
+def set_population(_population):
+  global population
+  population = _population
+
+def set_offspring(_offspring):
+  global offspring
+  offspring = _offspring

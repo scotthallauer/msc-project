@@ -28,7 +28,7 @@ class DogController:
     self.agent.set_rotation(output[0,1])
 
   def get_inputs(self):
-    dists = self.agent.get_all_distances() * globals.config.get("gSensorRange", "int")
+    dists = self.agent.get_all_distances() #* globals.config.get("gSensorRange", "int")
     robot_ids = self.agent.get_all_robot_ids()
     is_walls = self.agent.get_all_walls()
     # is_objects = self.agent.get_all_objects() != -1
@@ -42,7 +42,7 @@ class DogController:
 
     max_dist = math.pow(globals.config.get("gArenaWidth", "int"), 2) + math.pow(globals.config.get("gArenaHeight", "int"), 2)
 
-    landmark_dist = self.agent.get_closest_landmark_dist() * max_dist
+    landmark_dist = self.agent.get_closest_landmark_dist() #* max_dist
     landmark_orient = self.agent.get_closest_landmark_orientation()
     
     inputs = np.concatenate((bias, dog_dist, sheep_dist, wall_dist, [landmark_dist, landmark_orient]))
