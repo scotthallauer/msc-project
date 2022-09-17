@@ -12,16 +12,12 @@ class DogController:
 
   def __init__(self, agent):
     self.agent = agent
-    #self.nb_inputs = 1 + (self.agent.nb_sensors * 4) + 2 # bias + sensors + landmark
-    self.nb_inputs = 1 + (self.agent.nb_sensors * 3) + 2 # bias + sensors + landmark
+    self.nb_inputs = 1 + (self.agent.nb_sensors * 3) + 2 # bias + sensors (dogs, sheep & walls) + landmark
     self.nb_hiddens = 10
     self.nb_outputs = 2
     self.network = NeuralNetwork(self.nb_inputs, self.nb_hiddens, self.nb_outputs)
     self.genome = None
-    if self.agent.get_id() == 1:
-      self.agent.set_color(*[0, 0, 255])
-    else:
-      self.agent.set_color(*[255, 0, 0])
+    self.agent.set_color(*[255, 0, 0])
 
   def reset(self):
     pass
@@ -35,29 +31,20 @@ class DogController:
     dists = self.agent.get_all_distances() * globals.config.get("gSensorRange", "int")
     robot_ids = self.agent.get_all_robot_ids()
     is_walls = self.agent.get_all_walls()
-    is_objects = self.agent.get_all_objects() != -1
+    # is_objects = self.agent.get_all_objects() != -1
 
     bias = [1]
 
     dog_dist = list(map(lambda i: dists[i] if categorise.is_dog(robot_ids[i]) else 0, range(len(robot_ids))))
     sheep_dist = list(map(lambda i: dists[i] if categorise.is_sheep(robot_ids[i]) else 0, range(len(robot_ids))))
     wall_dist = np.where(is_walls, dists, 0)
-    object_dist = np.where(is_objects, dists, 0)
+    # object_dist = np.where(is_objects, dists, 0)
 
     max_dist = math.pow(globals.config.get("gArenaWidth", "int"), 2) + math.pow(globals.config.get("gArenaHeight", "int"), 2)
 
     landmark_dist = self.agent.get_closest_landmark_dist() * max_dist
     landmark_orient = self.agent.get_closest_landmark_orientation()
-
-    # if self.agent.get_id() == 1:
-    #   print("dog_dist: ", dog_dist)
-    #   print("sheep_dist: ", sheep_dist)
-    #   print("wall_dist: ", wall_dist)
-    #   print("object_dist: ", object_dist)
-    #   print("landmark_dist: ", landmark_dist)
-    #   print("landmark_orient: ", landmark_orient)
-
-    # inputs = np.concatenate((bias, dog_dist, sheep_dist, wall_dist, object_dist, [landmark_dist, landmark_orient]))
+    
     inputs = np.concatenate((bias, dog_dist, sheep_dist, wall_dist, [landmark_dist, landmark_orient]))
     return inputs
 

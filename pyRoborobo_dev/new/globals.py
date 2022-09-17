@@ -12,10 +12,14 @@ def init(_config_filename):
   run_id = str(int(time()))
   config_filename = _config_filename
   config = ConfigReader(_config_filename)
-  fitness_logger = ResultLogger(run_id, "fitness", ["generation", "swarm fitness", "individual fitness"])
+  fitness_logger = ResultLogger(run_id, "fitness", ["generation", "average fitness", "max fitness"])
 
 def set_simulator(_simulator):
+  global simulator
+  global controllers
   global individual_fitness_monitor
   global swarm_fitness_monitor
+  simulator = _simulator
+  controllers = _simulator.controllers
   individual_fitness_monitor = IndividualFitnessMonitor(config.get("pIndividualFitnessAlgorithm", "str"), _simulator.controllers)
   swarm_fitness_monitor = SwarmFitnessMonitor(config.get("pSwarmFitnessAlgorithm", "str"), _simulator.controllers)

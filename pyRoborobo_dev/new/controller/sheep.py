@@ -19,7 +19,7 @@ class SheepController:
     self.agent.set_translation(1)
     self.agent.set_rotation(0)
 
-    globals.individual_fitness_monitor.track(self.agent)
+    # globals.individual_fitness_monitor.track(self.agent)
 
     self.fly_towards_center()
     self.match_velocity()
