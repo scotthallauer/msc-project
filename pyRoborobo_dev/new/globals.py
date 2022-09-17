@@ -1,7 +1,7 @@
 from util.config_reader import ConfigReader
 from util.result_logger import ResultLogger
-from fitness.individual_monitor import IndividualFitnessMonitor
-from fitness.swarm_monitor import SwarmFitnessMonitor
+from monitor.individual import IndividualFitnessMonitor
+from monitor.swarm import SwarmFitnessMonitor
 from time import time
 
 def init(_config_filename):
