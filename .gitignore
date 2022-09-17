@@ -1,8 +1,7 @@
 build/
 **/.DS_Store
 **/*.code-workspace
-**/old/logs/**
-**/new/logs/**
+**/new/output/**
 
 .idea/
 

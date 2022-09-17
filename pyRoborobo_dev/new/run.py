@@ -69,12 +69,6 @@ if __name__ == "__main__":
   simulator.start()
   globals.set_simulator(simulator)
 
-  # add target zone to environment
-  target_zone = simulator.add_landmark()
-  target_zone.radius = globals.config.get("pTargetZoneRadius", "int")
-  target_zone.set_coordinates(globals.config.get("pTargetZoneCoordX", "int"), globals.config.get("pTargetZoneCoordY", "int"))
-  target_zone.show()
-
   # run all generation simulations
   for generation in range(start_gen, globals.config.get("pSimulationGenerations", "int")):
     print("*" * 10, generation, "*" * 10)
