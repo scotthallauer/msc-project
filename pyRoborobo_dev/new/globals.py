@@ -15,10 +15,8 @@ def init(_config_filename, _run_id):
 
 def set_simulator(_simulator):
   global simulator
-  global controllers
   global individual_fitness_monitor
   global swarm_fitness_monitor
   simulator = _simulator
-  controllers = _simulator.controllers
   individual_fitness_monitor = IndividualFitnessMonitor(config.get("pIndividualFitnessAlgorithm", "str"), _simulator.controllers)
   swarm_fitness_monitor = SwarmFitnessMonitor(config.get("pSwarmFitnessAlgorithm", "str"), _simulator.controllers)

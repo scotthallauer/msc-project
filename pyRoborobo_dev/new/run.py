@@ -2,6 +2,7 @@ from pyroborobo import Pyroborobo
 from deap import base, creator, tools
 from controller.base import BaseController
 from time import time
+import evolution
 import util.categorise as categorise
 import numpy as np
 import globals
@@ -25,30 +26,7 @@ toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("mate", tools.cxTwoPoint)
 toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.1)
 toolbox.register("select", tools.selTournament, tournsize=3)
-
-def evaluate(individual):
-
-  # reset robot positions
-  for controller in globals.controllers:
-    controller.set_position(random.randint(0, globals.config.get("gArenaWidth", "int")), random.randint(0, globals.config.get("gArenaHeight", "int")))
-
-  # reset fitness monitor
-  globals.swarm_fitness_monitor.reset()
-
-  # assign genome to dogs
-  dogs = categorise.get_dogs(globals.controllers)
-  for dog in dogs:
-    dog.controller.set_genome(individual)
-  
-  # run simulation
-  globals.simulator.update(globals.config.get("pSimulationLifetime", "int"))
-
-  # report fitness results
-  # globals.swarm_fitness_monitor.report()
-
-  return globals.swarm_fitness_monitor.score(),
-
-toolbox.register("evaluate", evaluate)
+toolbox.register("evaluate", evolution.ssga)
 
 stats = tools.Statistics(lambda ind: ind.fitness.values)
 stats.register("avg", np.mean)
@@ -132,10 +110,7 @@ if __name__ == "__main__":
     logbook.record(gen=generation, evals=len(invalid_ind), **record)
     print(len(invalid_ind), "evaluations")
 
-    # report fitness results
-    #globals.individual_fitness_monitor.report()
-    #globals.swarm_fitness_monitor.report()
-
+    # save checkpoint
     if generation % globals.config.get("pCheckpointInterval", "int") == 0:
       cp = dict(
         rid=globals.run_id,
@@ -151,12 +126,5 @@ if __name__ == "__main__":
         os.makedirs(cp_dir)
       with open(cp_dir + "/gen_" + str(generation) + ".pkl", "wb") as cp_file:
         pickle.dump(cp, cp_file)
-
-    # reset fitness monitors
-    #globals.individual_fitness_monitor.reset()
-    #globals.swarm_fitness_monitor.reset()
-
-    #for controller in simulator.controllers:
-    #  controller.set_position(random.randint(0, globals.config.get("gArenaWidth", "int")), random.randint(0, globals.config.get("gArenaHeight", "int")))
 
   simulator.close()
