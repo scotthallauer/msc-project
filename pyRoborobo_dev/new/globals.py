@@ -1,5 +1,4 @@
 from util.config_reader import ConfigReader
-from util.result_logger import ResultLogger
 from monitor.individual import IndividualFitnessMonitor
 from monitor.swarm import SwarmFitnessMonitor
 
@@ -11,7 +10,6 @@ def init(_config_filename, _run_id):
   run_id = _run_id
   config_filename = _config_filename
   config = ConfigReader(_config_filename)
-  fitness_logger = ResultLogger("fitness", ["generation", "average fitness", "max fitness"])
 
 def set_simulator(_simulator):
   global simulator

@@ -9,9 +9,9 @@ class ResultLogger:
     self.dir = "./output/run_" + globals.run_id
     if not os.path.exists(self.dir):
       os.makedirs(self.dir)
-    with open(self.dir + "/" + self.name + ".csv", "a") as file:
+    with open(self.dir + "/" + self.name + ".csv", "w") as file:
       file.write(",".join(self.columns) + "\n")
 
   def append(self, values):
-    with open(self.dir + "/" + self.id + "_" + self.name + ".csv", "a") as file:
+    with open(self.dir + "/" + self.name + ".csv", "a") as file:
       file.write(",".join(map(str, values)) + "\n")

@@ -3,7 +3,7 @@ from deap import base, creator, tools
 from controller.base import BaseController
 from time import time
 import evolution
-import util.categorise as categorise
+from util.result_logger import ResultLogger
 import numpy as np
 import globals
 import pickle
@@ -20,11 +20,11 @@ creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", list, fitness=creator.FitnessMax)
 
 toolbox = base.Toolbox()
-toolbox.register("attribute", random.random)
+toolbox.register("attribute", random.uniform, a=-1, b=1)
 toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attribute, n=GENOME_SIZE)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("mate", tools.cxTwoPoint)
-toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.1)
+toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.05)
 toolbox.register("select", tools.selTournament, tournsize=3)
 
 stats = tools.Statistics(lambda ind: ind.fitness.values)
@@ -36,10 +36,10 @@ if __name__ == "__main__":
   # load command line parameters
   try:
 
-    RUN_TYPE = "resume" if sys.argv[1] == "-r" else "start"
+    COMMAND_FLAG = sys.argv[1]
 
     # start a new evolution simulation
-    if RUN_TYPE == "start":
+    if COMMAND_FLAG == "-s":
       run_id = sys.argv[3] if len(sys.argv) == 4 else str(int(time()))
       globals.init(_config_filename=sys.argv[2], _run_id=run_id)
       population = toolbox.population(n=globals.config.get("pPopulationSize", "int"))
@@ -48,7 +48,7 @@ if __name__ == "__main__":
       logbook = tools.Logbook()
 
     # resume a previous evolution simulation
-    elif RUN_TYPE == "resume":
+    elif COMMAND_FLAG == "-r":
       CHECKPOINT_FILENAME = sys.argv[2]
       with open(CHECKPOINT_FILENAME, "rb") as cp_file:
         cp = pickle.load(cp_file)
@@ -59,10 +59,28 @@ if __name__ == "__main__":
       logbook = cp["logbook"]
       random.setstate(cp["rndstate"])
 
+    # export results from checkpoint logbook
+    elif COMMAND_FLAG == "-e":
+      CHECKPOINT_FILENAME = sys.argv[2]
+      with open(CHECKPOINT_FILENAME, "rb") as cp_file:
+        cp = pickle.load(cp_file)
+      globals.init(_config_filename=cp["configfile"], _run_id=cp["rid"])
+      logbook = cp["logbook"]
+      results = logbook.select("gen", "evals", "avg", "max")
+      logger = ResultLogger("results", ["generation", "evaluations", "average fitness", "max fitness"])
+      for i in range(len(results[0])):
+        logger.append([results[0][i], results[1][i], results[2][i], results[3][i]])
+      exit(0)
+
+  except SystemExit:
+    print("Results exported.")
+    exit(0)
+
   except:
     print("*" * 10, "Usage Instructions", "*" * 10)
-    print("Start Simulation:\tpython run.py -s <config file> <run id>")
-    print("Resume Simulation:\tpython run.py -r <checkpoint file>")
+    print("Start Evolution:\tpython run.py -s <config file> <run id>")
+    print("Resume Evolution:\tpython run.py -r <checkpoint file>")
+    print("Export Results:\t\tpython run.py -e <checkpoint file>")
     exit(1)
 
   # set evaluation method based on selected algorithm
@@ -109,7 +127,6 @@ if __name__ == "__main__":
     # record stats
     halloffame.update(population)
     record = stats.compile(population)
-    globals.fitness_logger.append([generation, record["avg"], record["max"]])
     logbook.record(gen=generation, evals=len(invalid_ind), **record)
     print(len(invalid_ind), "evaluations")
 
