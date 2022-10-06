@@ -54,7 +54,7 @@ if __name__ == "__main__":
         cp = pickle.load(cp_file)
       globals.init(_config_filename=cp["configfile"], _run_id=cp["rid"])
       population = cp["population"]
-      start_gen = cp["generation"]
+      start_gen = cp["generation"] + 1
       halloffame = cp["halloffame"]
       logbook = cp["logbook"]
       random.setstate(cp["rndstate"])
