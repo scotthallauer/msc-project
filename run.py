@@ -1,10 +1,10 @@
 from pyroborobo import Pyroborobo
 from deap import base, creator, tools
 from controller.base import BaseController
-from time import time
-import evolution
 from util.result_logger import ResultLogger
+from time import time
 import numpy as np
+import evolution
 import globals
 import pickle
 import random
@@ -59,7 +59,7 @@ if __name__ == "__main__":
       logbook = cp["logbook"]
       random.setstate(cp["rndstate"])
 
-    # export results from checkpoint logbook
+    # export all statistic results from checkpoint
     elif COMMAND_FLAG == "-e":
       CHECKPOINT_FILENAME = sys.argv[2]
       with open(CHECKPOINT_FILENAME, "rb") as cp_file:
@@ -70,17 +70,42 @@ if __name__ == "__main__":
       logger = ResultLogger("results", ["generation", "evaluations", "average fitness", "max fitness"])
       for i in range(len(results[0])):
         logger.append([results[0][i], results[1][i], results[2][i], results[3][i]])
+      print("Results exported.")
+      exit(0)
+
+    # view simulation of elite individual from a checkpoint
+    elif COMMAND_FLAG == "-v":
+      CHECKPOINT_FILENAME = sys.argv[2]
+      with open(CHECKPOINT_FILENAME, "rb") as cp_file:
+        cp = pickle.load(cp_file)
+      temp_conf_filename = "config/temp.properties"
+      with open(cp["configfile"], "r") as orig_conf_file, open(temp_conf_filename, "w") as temp_conf_file:
+        for line in orig_conf_file:
+          if line.find("gBatchMode") == -1:
+            temp_conf_file.write(line)
+          else:
+            temp_conf_file.write("gBatchMode = false")
+      globals.init(_config_filename=temp_conf_filename, _run_id=cp["rid"])
+      elite = cp["halloffame"].items[0]
+      simulator = Pyroborobo.create(globals.config_filename, controller_class=BaseController)
+      simulator.start()
+      globals.set_simulator(simulator)
+      evolution.evaluators["SSGA"](elite)
+      simulator.close()
+      os.remove(temp_conf_filename)
       exit(0)
 
   except SystemExit:
-    print("Results exported.")
     exit(0)
 
-  except:
+  except Exception as e:
+    print("*" * 10, "Error Message", "*" * 10)
+    print(e)
     print("*" * 10, "Usage Instructions", "*" * 10)
     print("Start Evolution:\tpython run.py -s <config file> <run id>")
     print("Resume Evolution:\tpython run.py -r <checkpoint file>")
     print("Export Results:\t\tpython run.py -e <checkpoint file>")
+    print("View Simulation:\tpython run.py -v <checkpoint file>")
     exit(1)
 
   # set evaluation method based on selected algorithm
