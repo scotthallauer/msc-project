@@ -36,25 +36,28 @@ class SheepController:
         continue
       # object is a wall
       if camera_wall[sensor_id] and camera_dist[sensor_id] < globals.config.get("sWallAvoidanceRadius", "float"):
-        if camera_angle_deg[sensor_id] != 0:
-          self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
-        else:
-          self.agent.set_rotation(1)
+        rotation = self.rotation_for_avoidance(camera_dist[sensor_id], camera_angle_deg[sensor_id], globals.config.get("sWallAvoidanceRadius", "float"))
+        self.agent.set_rotation(rotation)
         break
       # object is a dog
       if categorise.is_dog(camera_robot_id[sensor_id]) and camera_dist[sensor_id] < globals.config.get("sDogAvoidanceRadius", "float"):
-        if camera_angle_deg[sensor_id] != 0:
-          self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
-        else:
-          self.agent.set_rotation(1)
+        rotation = self.rotation_for_avoidance(camera_dist[sensor_id], camera_angle_deg[sensor_id], globals.config.get("sDogAvoidanceRadius", "float"))
+        self.agent.set_rotation(rotation)
         break
       # object is a sheep
       if categorise.is_sheep(camera_robot_id[sensor_id]) and camera_dist[sensor_id] < globals.config.get("sSheepAvoidanceRadius", "float"):
-        if camera_angle_deg[sensor_id] != 0:
-          self.agent.set_rotation(-camera_angle_rad[sensor_id] / np.pi)
-        else:
-          self.agent.set_rotation(1)
+        rotation = self.rotation_for_avoidance(camera_dist[sensor_id], camera_angle_deg[sensor_id], globals.config.get("sSheepAvoidanceRadius", "float"))
+        self.agent.set_rotation(rotation)
         break
+
+  def rotation_for_avoidance(self, distance, angle, avoidance_radius):
+    # rotate towards the opposite side that the object was detected on
+    rotation_direction = 1 if angle <= 0 else -1
+    # most important to avoid when directly in front (i.e. severity = 1 when angle = 0)
+    angle_severity = 1 - (abs(angle) / 180)
+    # most important to avoid when very close (i.e. severity = 1 when distance = 0)
+    distance_severity = 1 - (distance / avoidance_radius)
+    return rotation_direction * angle_severity * distance_severity
 
   # https://github.com/beneater/boids/blob/master/boids.js#L71-L93
   def fly_towards_center(self):
