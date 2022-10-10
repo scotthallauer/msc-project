@@ -28,7 +28,10 @@ class DogController:
     self.agent.set_rotation(output[0,1])
 
   def get_inputs(self):
-    dists = self.agent.get_all_distances() #* globals.config.get("gSensorRange", "int")
+    # distance inputs are normalised between 0 and 1 (where 0 is undetected and 1 is as close as possible)
+    dists = self.agent.get_all_distances() * globals.config.get("gSensorRange", "int")
+    dists[dists > globals.config.get("dSensorRange", "float")] = 0 
+    dists[dists != 0] = 1 - (dists[dists != 0] / globals.config.get("dSensorRange", "float"))
     robot_ids = self.agent.get_all_robot_ids()
     is_walls = self.agent.get_all_walls()
     # is_objects = self.agent.get_all_objects() != -1
