@@ -41,8 +41,9 @@ def nsga(individual):
 def reset_simulator():
   # reset robot positions
   for controller in globals.simulator.controllers:
-    x = random.randint(0, globals.config.get("gArenaWidth", "int"))
-    y = random.randint(0, globals.config.get("gArenaHeight", "int"))
+    padding = 20 # distance from sides of arena to avoid placing robots inside walls
+    x = random.randint(padding, globals.config.get("gArenaWidth", "int") - padding)
+    y = random.randint(padding, globals.config.get("gArenaHeight", "int") - padding)
     controller.set_position(x, y)
 
   # reset fitness monitor
