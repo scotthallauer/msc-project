@@ -8,7 +8,7 @@ global evaluators
 def ssga(individual):
 
   # assign same genome to all dogs
-  for dog in categorise.get_dogs(globals.simulator.controllers):
+  for dog in categorise.get_dogs():
     dog.controller.set_genome(individual)
   
   # run simulation
@@ -22,7 +22,7 @@ def nsga(individual):
 
   # assign different genomes to all dogs
   id = 0
-  dogs = categorise.get_dogs(globals.simulator.controllers)
+  dogs = categorise.get_dogs()
   genomes = random.sample(globals.offspring, len(dogs)-1)
   for dog in dogs:
     if id == 0:

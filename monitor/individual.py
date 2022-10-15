@@ -4,13 +4,13 @@ import globals
 
 class IndividualFitnessMonitor:
 
-  def __init__(self, method, controllers):
+  def __init__(self, method):
     if method == "REGCNT":
-      self.monitor = RegularCountFitnessMonitor(controllers)
+      self.monitor = RegularCountFitnessMonitor()
     elif method == "SUPCNT":
-      self.monitor = SuperCountFitnessMonitor(controllers)
+      self.monitor = SuperCountFitnessMonitor()
     elif method == "SUPDST":
-      self.monitor = SuperDistanceFitnessMonitor(controllers)
+      self.monitor = SuperDistanceFitnessMonitor()
     else:
       raise Exception("Unsupported method code for measuring individual fitness")
 
@@ -33,8 +33,8 @@ class IndividualFitnessMonitor:
 
 class RegularCountFitnessMonitor:
 
-  def __init__(self, controllers):
-    self.dogs = categorise.get_dogs(controllers)
+  def __init__(self):
+    self.dogs = categorise.get_dogs()
     self.target_coords = [globals.config.get("pTargetZoneCoordX", "int"), globals.config.get("pTargetZoneCoordY", "int")]
     self.target_radius = globals.config.get("pTargetZoneRadius", "int")
     self.avoidance_radius = globals.config.get("sDogAvoidanceRadius", "float")
@@ -125,8 +125,8 @@ class RegularCountFitnessMonitor:
 
 class SuperCountFitnessMonitor:
 
-  def __init__(self, controllers):
-    self.dogs = categorise.get_dogs(controllers)
+  def __init__(self):
+    self.dogs = categorise.get_dogs()
     self.target_coords = [globals.config.get("pTargetZoneCoordX", "int"), globals.config.get("pTargetZoneCoordY", "int")]
     self.target_radius = globals.config.get("pTargetZoneRadius", "int")
     self.avoidance_radius = globals.config.get("sDogAvoidanceRadius", "float")
@@ -245,8 +245,8 @@ class SuperCountFitnessMonitor:
 
 class SuperDistanceFitnessMonitor:
 
-  def __init__(self, controllers):
-    self.dogs = categorise.get_dogs(controllers)
+  def __init__(self):
+    self.dogs = categorise.get_dogs()
     self.target_coords = [globals.config.get("pTargetZoneCoordX", "int"), globals.config.get("pTargetZoneCoordY", "int")]
     self.target_radius = globals.config.get("pTargetZoneRadius", "int")
     self.avoidance_radius = globals.config.get("sDogAvoidanceRadius", "float")
