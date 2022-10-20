@@ -23,6 +23,7 @@ class DogController:
     pass
 
   def step(self):
+    globals.ds_interaction_monitor.track(self.agent)
     output = self.network(torch.FloatTensor(self.get_inputs().reshape((1, self.nb_inputs))))
     self.agent.set_translation(output[0,0])
     self.agent.set_rotation(output[0,1])

@@ -9,6 +9,20 @@ def distance_between_points(coords_a, coords_b):
 def distance_from_target_zone(robot_coords, target_coords, target_radius):
   return max(0, distance_between_points(robot_coords, target_coords) - target_radius)
 
+def inner_angle_between_orientations(orient_a, orient_b):
+  angle = abs(orient_a - orient_b)
+  if angle <= 180:
+    return angle
+  else:
+    return 360 - angle
+
+def outer_angle_between_orientations(orient_a, orient_b):
+  angle = abs(orient_a - orient_b)
+  if angle >= 180:
+    return angle
+  else:
+    return 360 - angle
+
 # give best rotation for turning towards target orientation
 # rotation: 1 = max clockwise, 0 = no rotation, -1 = max counter-clockwise
 def rotation_for_target_orientation(current_degrees, target_degrees, coherence):
