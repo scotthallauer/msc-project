@@ -93,26 +93,24 @@ class MingleFitnessMonitor:
       return - (end_distance - start_distance) / worst_delta
 
   def _score_orientation_delta(self, start_coords, start_distance, start_actual_orientation, start_target_orientation, end_coords, end_distance, end_actual_orientation, end_target_orientation):
+    start_offset_angle = calculate.inner_angle_between_orientations(start_actual_orientation, start_target_orientation)
     if start_distance == 0:
-      start_relative_gain = 0
-      start_relative_loss = 1
+      start_tangent_angle = 90
     else:
-      start_offset_angle = calculate.inner_angle_between_orientations(start_actual_orientation, start_target_orientation)
       start_tangent_angle = math.asin(self.target_radius/calculate.distance_between_points(start_coords, self.target_coords))
-      start_absolute_gain = max(start_offset_angle - start_tangent_angle, 0)
-      start_absolute_loss = 180 - start_offset_angle
-      start_relative_gain = start_absolute_gain / (start_absolute_gain + start_absolute_loss)
-      start_relative_loss = 1 - start_relative_gain
+    start_absolute_gain = max(start_offset_angle - start_tangent_angle, 0)
+    start_absolute_loss = 180 - start_offset_angle
+    start_relative_gain = start_absolute_gain / (start_absolute_gain + start_absolute_loss)
+    start_relative_loss = 1 - start_relative_gain
+    end_offset_angle = calculate.inner_angle_between_orientations(end_actual_orientation, end_target_orientation)
     if end_distance == 0:
-      end_relative_gain = 0
-      end_relative_loss = 1
+      end_tangent_angle = 90
     else:
-      end_offset_angle = calculate.inner_angle_between_orientations(end_actual_orientation, end_target_orientation)
       end_tangent_angle = math.asin(self.target_radius/calculate.distance_between_points(end_coords, self.target_coords))
-      end_absolute_gain = max(end_offset_angle - end_tangent_angle, 0)
-      end_absolute_loss = 180 - end_offset_angle
-      end_relative_gain = end_absolute_gain / (end_absolute_gain + end_absolute_loss)
-      end_relative_loss = 1 - end_relative_gain
+    end_absolute_gain = max(end_offset_angle - end_tangent_angle, 0)
+    end_absolute_loss = 180 - end_offset_angle
+    end_relative_gain = end_absolute_gain / (end_absolute_gain + end_absolute_loss)
+    end_relative_loss = 1 - end_relative_gain
     if end_relative_gain <= start_relative_gain:
       if start_relative_gain == 0:
         return 1
