@@ -50,15 +50,23 @@ class MingleFitnessMonitor:
 
   def score(self):
     interaction_scores = []
+    interaction_time = 0.0
     for dog in self.dogs:
-      dog_interactions = globals.ds_interaction_monitor.get_history(dog)
-      for sheep_interactions in dog_interactions.values():
-        for interaction in sheep_interactions:
-          interaction_scores.append(self._score_interaction(interaction))
-    if len(interaction_scores) == 0:
-      return 0
+      dog_history = globals.ds_interaction_monitor.get_history(dog)
+      if "interaction_time" in dog_history:
+        interaction_time += dog_history["interaction_time"]
+      for key in dog_history:
+        if key != "interaction_time":
+          for interaction in dog_history[key]:
+            interaction_scores.append(self._score_interaction(interaction))
+    avg_interaction_score = 0
+    if len(interaction_scores) != 0:
+      avg_interaction_score = sum(interaction_scores) / len(interaction_scores)
+    multiplier = interaction_time / (len(self.dogs) * globals.config.get("pSimulationLifetime", "int"))
+    if avg_interaction_score < 0:
+      return avg_interaction_score
     else:
-      return sum(interaction_scores) / len(interaction_scores)
+      return avg_interaction_score * multiplier
 
   def track(self):
     pass
@@ -76,19 +84,25 @@ class MingleFitnessMonitor:
     start_target_orientation = interaction["start"]["sheep"]["target_orientation"]
     end_actual_orientation = interaction["end"]["sheep"]["actual_orientation"]
     end_target_orientation = interaction["end"]["sheep"]["target_orientation"]
-    d_score = self._score_distance_delta(start_distance, end_distance)
+    d_score = self._score_distance_delta(start_coords, start_distance, end_coords, end_distance)
     o_score = self._score_orientation_delta(start_coords, start_distance, start_actual_orientation, start_target_orientation, end_coords, end_distance, end_actual_orientation, end_target_orientation)
     s_score = self._score_status_delta(start_distance, end_distance)
     return (d_score + o_score + s_score) / 3
 
-  def _score_distance_delta(self, start_distance, end_distance):
+  def _score_distance_delta(self, start_coords, start_distance, end_coords, end_distance):
     best_delta = start_distance
     worst_delta = self.max_distance - start_distance
-    if end_distance <= start_distance:
-      if start_distance == 0:
-        return 1
+    if start_distance == 0:
+      start_internal_distance = calculate.distance_between_points(start_coords, self.target_coords)
+      end_internal_distance = calculate.distance_between_points(end_coords, self.target_coords)
+      best_internal_delta = start_internal_distance
+      worst_internal_delta = self.target_radius - start_internal_distance
+      if end_internal_distance <= start_internal_distance:
+        return (start_internal_distance - end_internal_distance) / best_internal_delta
       else:
-        return (start_distance - end_distance) / best_delta
+        return max(-(end_internal_distance - start_internal_distance) / worst_internal_delta, -1)
+    elif end_distance <= start_distance:
+      return (start_distance - end_distance) / best_delta
     else:
       return - (end_distance - start_distance) / worst_delta
 

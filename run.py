@@ -90,7 +90,8 @@ if __name__ == "__main__":
       simulator = Pyroborobo.create(globals.config_filename, controller_class=BaseController)
       simulator.start()
       globals.set_simulator(simulator)
-      evolution.evaluators["SSGA"](elite)
+      fitness = evolution.evaluators["SSGA"](elite)[0]
+      print("Fitness = " + str(fitness))
       simulator.close()
       os.remove(temp_conf_filename)
       exit(0)
@@ -138,11 +139,10 @@ if __name__ == "__main__":
         toolbox.mutate(mutant)
         del mutant.fitness.values
 
-    # evaluate all new individuals
+    # evaluate all individuals
     globals.set_offspring(offspring)
-    invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-    fitnesses = map(toolbox.evaluate, invalid_ind)
-    for ind, fit in zip(invalid_ind, fitnesses):
+    fitnesses = map(toolbox.evaluate, offspring)
+    for ind, fit in zip(offspring, fitnesses):
       ind.fitness.values = fit
 
     # replace the whole population with the offspring
@@ -152,8 +152,8 @@ if __name__ == "__main__":
     # record stats
     halloffame.update(population)
     record = stats.compile(population)
-    logbook.record(gen=generation, evals=len(invalid_ind), **record)
-    print(len(invalid_ind), "evaluations")
+    logbook.record(gen=generation, evals=len(offspring), **record)
+    print(len(offspring), "evaluations")
 
     # save checkpoint
     if generation % globals.config.get("pCheckpointInterval", "int") == 0:

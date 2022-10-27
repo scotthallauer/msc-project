@@ -35,18 +35,14 @@ class DogController:
     dists[dists != 0] = 1 - (dists[dists != 0] / globals.config.get("dSensorRange", "float"))
     robot_ids = self.agent.get_all_robot_ids()
     is_walls = self.agent.get_all_walls()
-    # is_objects = self.agent.get_all_objects() != -1
 
     bias = [1]
 
     dog_dist = list(map(lambda i: dists[i] if categorise.is_dog(robot_ids[i]) else 0, range(len(robot_ids))))
     sheep_dist = list(map(lambda i: dists[i] if categorise.is_sheep(robot_ids[i]) else 0, range(len(robot_ids))))
     wall_dist = np.where(is_walls, dists, 0)
-    # object_dist = np.where(is_objects, dists, 0)
 
-    max_dist = math.pow(globals.config.get("gArenaWidth", "int"), 2) + math.pow(globals.config.get("gArenaHeight", "int"), 2)
-
-    landmark_dist = self.agent.get_closest_landmark_dist() #* max_dist
+    landmark_dist = 1 - self.agent.get_closest_landmark_dist()
     landmark_orient = self.agent.get_closest_landmark_orientation()
     
     inputs = np.concatenate((bias, dog_dist, sheep_dist, wall_dist, [landmark_dist, landmark_orient]))

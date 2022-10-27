@@ -33,15 +33,24 @@ class DogSheepInteractionMonitor:
     self.history = {}
 
   def track(self, dog):
+    interacting = False
     for sheep in categorise.get_sheep():
       trackable = calculate.distance_between_points(dog.absolute_position, sheep.absolute_position) <= self.mutual_sensor_range
       if dog.id in self.tracking and sheep.id in self.tracking[dog.id]:
         if trackable:
+          interacting = True
           self.update_tracking(dog, sheep)
         else:
           self.stop_tracking(dog, sheep)
       elif trackable:
+        interacting = True
         self.start_tracking(dog, sheep)
+    if interacting:
+      if dog.id in self.history:
+        self.history[dog.id]["interaction_time"] += 1
+      else:
+        self.history[dog.id] = {}
+        self.history[dog.id]["interaction_time"] = 1
 
   def get_history(self, agent):
     if categorise.is_dog(agent.id):
