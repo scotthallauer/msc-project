@@ -15,5 +15,7 @@ class ConfigReader():
       return int(value)
     elif type == "float":
       return float(value)
+    elif type == "bool":
+      return value == "true"
     else:
       return str(value)
