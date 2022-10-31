@@ -49,6 +49,17 @@ class SheepController:
         rotation = self.rotation_for_avoidance(camera_dist[sensor_id], camera_angle_deg[sensor_id], globals.config.get("sSheepAvoidanceRadius", "float"))
         self.agent.set_rotation(rotation)
         break
+      # object is pen
+      if globals.config.get("pTaskEnvironment", "str") == "CAPTURE":
+        target_coords = [globals.config.get("pTargetZoneCoordX", "int"), globals.config.get("pTargetZoneCoordY", "int")]
+        target_radius = globals.config.get("pTargetZoneRadius", "int")
+        target_distance = calculate.distance_from_target_zone(self.agent.absolute_position, target_coords, target_radius)
+        target_avoidance = globals.config.get("sTargetZoneAvoidanceRadius", "float")
+        if target_distance <= target_avoidance:
+          target_angle = self.agent.get_closest_landmark_orientation() * 180
+          rotation = self.rotation_for_avoidance(target_distance, target_angle, target_avoidance)
+          self.agent.set_rotation(rotation)
+          break
 
   def rotation_for_avoidance(self, distance, angle, avoidance_radius):
     # rotate towards the opposite side that the object was detected on
