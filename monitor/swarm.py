@@ -111,7 +111,7 @@ class MingleFitnessMonitor:
     if start_distance == 0:
       start_tangent_angle = 90
     else:
-      start_tangent_angle = math.asin(self.target_radius/calculate.distance_between_points(start_coords, self.target_coords))
+      start_tangent_angle = math.degrees(math.asin(self.target_radius/calculate.distance_between_points(start_coords, self.target_coords)))
     start_absolute_gain = max(start_offset_angle - start_tangent_angle, 0)
     start_absolute_loss = 180 - start_offset_angle
     start_relative_gain = start_absolute_gain / (start_absolute_gain + start_absolute_loss)
@@ -120,7 +120,7 @@ class MingleFitnessMonitor:
     if end_distance == 0:
       end_tangent_angle = 90
     else:
-      end_tangent_angle = math.asin(self.target_radius/calculate.distance_between_points(end_coords, self.target_coords))
+      end_tangent_angle = math.degrees(math.asin(self.target_radius/calculate.distance_between_points(end_coords, self.target_coords)))
     end_absolute_gain = max(end_offset_angle - end_tangent_angle, 0)
     end_absolute_loss = 180 - end_offset_angle
     end_relative_gain = end_absolute_gain / (end_absolute_gain + end_absolute_loss)
