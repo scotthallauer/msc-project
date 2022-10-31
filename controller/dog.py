@@ -42,8 +42,8 @@ class DogController:
     sheep_dist = list(map(lambda i: dists[i] if categorise.is_sheep(robot_ids[i]) else 0, range(len(robot_ids))))
     wall_dist = np.where(is_walls, dists, 0)
 
-    landmark_dist = 1 - self.agent.get_closest_landmark_dist()
-    landmark_orient = self.agent.get_closest_landmark_orientation()
+    landmark_dist = 1 - self.agent.get_closest_landmark_dist() # distance to the closest landmark -- normalized btw 0 and 1 (1 = close as possible)
+    landmark_orient = self.agent.get_closest_landmark_orientation() # angle to closest landmark -- normalized btw -1 and +1
     
     inputs = np.concatenate((bias, dog_dist, sheep_dist, wall_dist, [landmark_dist, landmark_orient]))
     return inputs

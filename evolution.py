@@ -1,5 +1,6 @@
 import globals
 import random
+import util.calculate as calculate
 import util.categorise as categorise
 
 global evaluators 
@@ -42,9 +43,17 @@ def reset_simulator():
   # reset robot positions
   for controller in globals.simulator.controllers:
     padding = 20 # distance from sides of arena to avoid placing robots inside walls
-    x = random.randint(padding, globals.config.get("gArenaWidth", "int") - padding)
-    y = random.randint(padding, globals.config.get("gArenaHeight", "int") - padding)
-    controller.set_position(x, y)
+    arena_width = globals.config.get("gArenaWidth", "int")
+    arena_height = globals.config.get("gArenaHeight", "int")
+    target_coords = [globals.config.get("pTargetZoneCoordX", "int"), globals.config.get("pTargetZoneCoordY", "int")]
+    target_radius = globals.config.get("pTargetZoneRadius", "int")
+    target_spawning = globals.config.get("pTargetZoneSpawning", "bool")
+    while True:
+      x = random.randint(padding, arena_width - padding)
+      y = random.randint(padding, arena_height - padding)
+      if target_spawning or calculate.distance_from_target_zone([x, y], target_coords, target_radius) > 0:
+        controller.set_position(x, y)
+        break
 
   # reset fitness monitor
   globals.swarm_fitness_monitor.reset()
