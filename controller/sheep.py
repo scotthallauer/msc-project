@@ -11,15 +11,27 @@ class SheepController:
   def __init__(self, agent):
     self.agent = agent
     self.agent.set_color(*[0, 255, 0])
+    self.agent.status = 1 # 1 = free, 0 = captured (only used in CAPTURE task, always free in CONTAIN)
 
   def reset(self):
     pass
 
   def step(self):
-    self.agent.set_translation(1)
-    self.agent.set_rotation(0)
-
     # globals.individual_fitness_monitor.track(self.agent)
+
+    if self.agent.status == 0:
+      self.agent.set_rotation(0)
+      self.agent.set_translation(0)
+      return
+    elif globals.config.get("pTaskEnvironment", "str") == "CAPTURE" and categorise.in_target_zone(self.agent):
+      self.agent.status = 0
+      self.agent.set_position(-100, -100)
+      self.agent.set_rotation(0)
+      self.agent.set_translation(0)
+      return
+
+    self.agent.set_translation(0.8)
+    self.agent.set_rotation(0)
 
     self.fly_towards_center()
     self.match_velocity()
@@ -57,7 +69,7 @@ class SheepController:
         target_avoidance = globals.config.get("sTargetZoneAvoidanceRadius", "float")
         if target_distance <= target_avoidance:
           target_angle = self.agent.get_closest_landmark_orientation() * 180
-          rotation = self.rotation_for_avoidance(target_distance, target_angle, target_avoidance)
+          rotation = self.rotation_for_avoidance(target_distance, target_angle, target_avoidance) * 0.5
           self.agent.set_rotation(rotation)
           break
 

@@ -12,6 +12,8 @@ class SwarmFitnessMonitor:
       self.monitor = DwellFitnessMonitor()
     elif method == "MINGLE":
       self.monitor = MingleFitnessMonitor()
+    elif method == "COUNT":
+      self.monitor = CountFitnessMonitor()
     else:
       raise Exception("Unsupported method code for measuring swarm fitness")
 
@@ -29,6 +31,28 @@ class SwarmFitnessMonitor:
   def reset(self):
     self.monitor.reset()
 
+
+class CountFitnessMonitor:
+
+  def __init__(self):
+    self.sheep = categorise.get_sheep()
+
+  def report(self):
+    print("Not implemented")
+
+  def score(self):
+    captured = 0
+    for sheep in self.sheep:
+      if sheep.status == 0:
+        captured += 1
+    return captured / len(self.sheep)
+
+  def track(self):
+    pass
+
+  def reset(self):
+    for sheep in self.sheep:
+      sheep.status = 1
 
 class MingleFitnessMonitor:
 
