@@ -4,6 +4,7 @@ import math
 import util.categorise as categorise
 import util.calculate as calculate
 import util.convert as convert
+from controller.radar import RadarSensor
 import numpy as np
 
 class SheepController:
@@ -12,6 +13,11 @@ class SheepController:
     self.agent = agent
     self.agent.set_color(*[0, 255, 0])
     self.agent.status = 1 # 1 = free, 0 = captured (only used in CAPTURE task, always free in CONTAIN)
+    self.sensor_fov = (-180, 180)
+    self.sensor_range = globals.config.get("sSensorRange", "int")
+    self.dog_sensor = RadarSensor(self.agent, "dog", self.sensor_range, self.sensor_fov)
+    self.sheep_sensor = RadarSensor(self.agent, "sheep", self.sensor_range, self.sensor_fov)
+    self.wall_sensor = RadarSensor(self.agent, "wall", self.sensor_range, self.sensor_fov)
 
   def reset(self):
     pass
@@ -25,7 +31,7 @@ class SheepController:
       return
     elif globals.config.get("pTaskEnvironment", "str") == "CAPTURE" and categorise.in_target_zone(self.agent):
       self.agent.status = 0
-      self.agent.set_position(-100, -100)
+      self.agent.set_position(0, 0)
       self.agent.set_rotation(0)
       self.agent.set_translation(0)
       return
@@ -36,42 +42,36 @@ class SheepController:
     self.fly_towards_center()
     self.match_velocity()
 
-    camera_dist = self.agent.get_all_distances() * globals.config.get("gSensorRange", "int")
-    camera_wall = self.agent.get_all_walls()
-    camera_robot_id = self.agent.get_all_robot_ids()
-    camera_angle_rad = self.agent.get_all_sensor_angles()
-    camera_angle_deg = camera_angle_rad * 180 / np.pi
+    wall_distance, wall_angle = self.wall_sensor.detect(normalised=False)
+    dog_distance, dog_angle = self.dog_sensor.detect(normalised=False)
+    sheep_distance, sheep_angle = self.sheep_sensor.detect(normalised=False)
 
-    for sensor_id in np.argsort(camera_dist): # get the index from the closest to the farthest
-      # object is out of range
-      if camera_angle_deg[sensor_id] < -270 or camera_angle_deg[sensor_id] > 270:
-        continue
-      # object is a wall
-      if camera_wall[sensor_id] and camera_dist[sensor_id] < globals.config.get("sWallAvoidanceRadius", "float"):
-        rotation = self.rotation_for_avoidance(camera_dist[sensor_id], camera_angle_deg[sensor_id], globals.config.get("sWallAvoidanceRadius", "float"))
+    distances = [wall_distance, dog_distance, sheep_distance]
+    angles = [wall_angle, dog_angle, sheep_angle]
+    avoidances = [
+      globals.config.get("sWallAvoidanceRadius", "float"), 
+      globals.config.get("sDogAvoidanceRadius", "float"), 
+      globals.config.get("sSheepAvoidanceRadius", "float")
+    ]
+
+    # target zone avoidance (for CAPTURE task)
+    if globals.config.get("pTaskEnvironment", "str") == "CAPTURE" and (dog_distance == 0 or dog_distance > avoidances[1]):
+      target_coords = [globals.config.get("pTargetZoneCoordX", "int"), globals.config.get("pTargetZoneCoordY", "int")]
+      target_radius = globals.config.get("pTargetZoneRadius", "int")
+      target_distance = calculate.distance_from_target_zone(self.agent.absolute_position, target_coords, target_radius)
+      target_avoidance = globals.config.get("sTargetZoneAvoidanceRadius", "float")
+      if target_distance <= target_avoidance:
+        target_angle = self.agent.get_closest_landmark_orientation() * 180
+        rotation = self.rotation_for_avoidance(target_distance, target_angle, target_avoidance) * globals.config.get("sTargetZoneAvoidanceStrength", "float")
         self.agent.set_rotation(rotation)
-        break
-      # object is a dog
-      if categorise.is_dog(camera_robot_id[sensor_id]) and camera_dist[sensor_id] < globals.config.get("sDogAvoidanceRadius", "float"):
-        rotation = self.rotation_for_avoidance(camera_dist[sensor_id], camera_angle_deg[sensor_id], globals.config.get("sDogAvoidanceRadius", "float"))
+        return
+
+    # wall, dog and sheep avoidance
+    for index in np.argsort(distances):
+      if 0 < distances[index] and distances[index] <= avoidances[index]:
+        rotation = self.rotation_for_avoidance(distances[index], angles[index], avoidances[index])
         self.agent.set_rotation(rotation)
-        break
-      # object is a sheep
-      if categorise.is_sheep(camera_robot_id[sensor_id]) and camera_dist[sensor_id] < globals.config.get("sSheepAvoidanceRadius", "float"):
-        rotation = self.rotation_for_avoidance(camera_dist[sensor_id], camera_angle_deg[sensor_id], globals.config.get("sSheepAvoidanceRadius", "float"))
-        self.agent.set_rotation(rotation)
-        break
-      # object is pen
-      if globals.config.get("pTaskEnvironment", "str") == "CAPTURE":
-        target_coords = [globals.config.get("pTargetZoneCoordX", "int"), globals.config.get("pTargetZoneCoordY", "int")]
-        target_radius = globals.config.get("pTargetZoneRadius", "int")
-        target_distance = calculate.distance_from_target_zone(self.agent.absolute_position, target_coords, target_radius)
-        target_avoidance = globals.config.get("sTargetZoneAvoidanceRadius", "float")
-        if target_distance <= target_avoidance:
-          target_angle = self.agent.get_closest_landmark_orientation() * 180
-          rotation = self.rotation_for_avoidance(target_distance, target_angle, target_avoidance) * 0.5
-          self.agent.set_rotation(rotation)
-          break
+        return
 
   def rotation_for_avoidance(self, distance, angle, avoidance_radius):
     # rotate towards the opposite side that the object was detected on
