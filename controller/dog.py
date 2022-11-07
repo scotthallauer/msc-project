@@ -2,7 +2,7 @@ import torch
 import util.categorise as categorise
 import numpy as np
 import globals
-import math
+from controller.radar import RadarSensor
 from torch import nn
 
 torch.manual_seed(0) # ensure bias is consistent
@@ -12,12 +12,17 @@ class DogController:
 
   def __init__(self, agent):
     self.agent = agent
-    self.nb_inputs = 1 + (self.agent.nb_sensors * 3) + 2 # bias + sensors (dogs, sheep & walls) + landmark
+    self.agent.set_color(*[255, 0, 0])
+    self.nb_inputs = 1 + (3 * 2) + 2 # bias + radar sensors (dogs, sheep & walls) + landmark
     self.nb_hiddens = 10
     self.nb_outputs = 2
+    self.sensor_fov = (-90, 90)
+    self.sensor_range = globals.config.get("dSensorRange", "int")
+    self.dog_sensor = RadarSensor(self.agent, "dog", self.sensor_range, self.sensor_fov)
+    self.sheep_sensor = RadarSensor(self.agent, "sheep", self.sensor_range, self.sensor_fov)
+    self.wall_sensor = RadarSensor(self.agent, "wall", self.sensor_range, self.sensor_fov)
     self.network = NeuralNetwork(self.nb_inputs, self.nb_hiddens, self.nb_outputs)
     self.genome = None
-    self.agent.set_color(*[255, 0, 0])
 
   def reset(self):
     pass
@@ -29,23 +34,17 @@ class DogController:
     self.agent.set_rotation(output[0,1])
 
   def get_inputs(self):
-    # distance inputs are normalised between 0 and 1 (where 0 is undetected and 1 is as close as possible)
-    dists = self.agent.get_all_distances() * globals.config.get("gSensorRange", "int")
-    dists[dists > globals.config.get("dSensorRange", "float")] = 0 
-    dists[dists != 0] = 1 - (dists[dists != 0] / globals.config.get("dSensorRange", "float"))
-    robot_ids = self.agent.get_all_robot_ids()
-    is_walls = self.agent.get_all_walls()
-
     bias = [1]
 
-    dog_dist = list(map(lambda i: dists[i] if categorise.is_dog(robot_ids[i]) else 0, range(len(robot_ids))))
-    sheep_dist = list(map(lambda i: dists[i] if categorise.is_sheep(robot_ids[i]) else 0, range(len(robot_ids))))
-    wall_dist = np.where(is_walls, dists, 0)
+    # distance inputs are normalised between 0 and 1 (where 0 is undetected and 1 is as close as possible)
+    wall_detection = self.wall_sensor.detect()
+    dog_detection = self.dog_sensor.detect()
+    sheep_detection = self.sheep_sensor.detect()
 
     landmark_dist = 1 - self.agent.get_closest_landmark_dist() # distance to the closest landmark -- normalized btw 0 and 1 (1 = close as possible)
     landmark_orient = self.agent.get_closest_landmark_orientation() # angle to closest landmark -- normalized btw -1 and +1
     
-    inputs = np.concatenate((bias, dog_dist, sheep_dist, wall_dist, [landmark_dist, landmark_orient]))
+    inputs = np.concatenate((bias, wall_detection, dog_detection, sheep_detection, [landmark_dist, landmark_orient]))
     return inputs
 
   def set_genome(self, genome):
