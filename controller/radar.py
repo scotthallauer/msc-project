@@ -10,23 +10,27 @@ import numpy as np
 
 class RadarSensor:
 
-  def __init__(self, agent, type, fov=(-180, 180)):
+  def __init__(self, agent, type, range, fov=(-180, 180)):
     self.agent = agent
     self.type = type # wall, dog or sheep
+    self.range = range # sensory radius in pixels
     self.fov = fov # tuple with max left angle and max right angle in degrees
 
   def detect(self, normalised=True):
     # get all distance detections and sensor angles (in either absolute values (pixels and degrees) or normalised values)
+    distances = self.agent.get_all_distances() * globals.config.get("gSensorRange", "int")
+    distances[distances > self.range] = 0 
     if normalised:
-      distances = 1 - self.agent.get_all_distances()
+      distances[distances != 0] = 1 - (distances[distances != 0] / self.range)
       angles = self.agent.get_all_sensor_angles() / np.pi
       min_angle = self.fov[0] / 180
       max_angle = self.fov[1] / 180
+      closest_distance = 0
     else:
-      distances = self.agent.get_all_distances() * globals.config.get("gSensorRange", "int")
       angles = (self.agent.get_all_sensor_angles() / np.pi) * 180
       min_angle = self.fov[0]
       max_angle = self.fov[1]
+      closest_distance = 9999999999999
     # filter distance detections based on object type for radar
     if self.type == "wall":
       is_walls = self.agent.get_all_walls()
@@ -41,11 +45,12 @@ class RadarSensor:
     distances = [distances[i] for i in range(len(angles)) if min_angle <= angles[i] and angles[i] <= max_angle]
     angles = [angle for angle in angles if min_angle <= angle and angle <= max_angle]
     # get nearest distance detection to return
-    closest_index = 0
+    closest_index = -1
     for i in range(len(distances)):
-      if (normalised and distances[i] > distances[closest_index]) or (not normalised and distances[i] < distances[closest_index]):
+      if (normalised and distances[i] > closest_distance) or (not normalised and 0 < distances[i] and distances[i] < closest_distance):
         closest_index = i
-    if distances[closest_index] == 0:
+        closest_distance = distances[i]
+    if closest_index == -1:
       return (0, 0)
     else:
       return (distances[closest_index], angles[closest_index])
