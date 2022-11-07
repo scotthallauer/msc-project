@@ -11,7 +11,7 @@ import random
 import sys
 import os
 
-NB_INPUTS = 1 + (12 * 3) + 2
+NB_INPUTS = 1 + (3 * 2) + 2
 NB_HIDDENS = 10
 NB_OUTPUTS = 2
 GENOME_SIZE = (NB_INPUTS * NB_HIDDENS) + (NB_HIDDENS * NB_OUTPUTS)
