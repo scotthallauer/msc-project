@@ -23,12 +23,14 @@ class DogController:
     self.wall_sensor = RadarSensor(self.agent, "wall", self.sensor_range, self.sensor_fov)
     self.network = NeuralNetwork(self.nb_inputs, self.nb_hiddens, self.nb_outputs)
     self.genome = None
+    self.swarm_fitness_algorithm = globals.config.get("pSwarmFitnessAlgorithm", "str")
 
   def reset(self):
     pass
 
   def step(self):
-    #globals.ds_interaction_monitor.track(self.agent)
+    if self.swarm_fitness_algorithm == "MINGLE":
+      globals.ds_interaction_monitor.track(self.agent)
     output = self.network(torch.FloatTensor(self.get_inputs().reshape((1, self.nb_inputs))))
     self.agent.set_translation(output[0,0])
     self.agent.set_rotation(output[0,1])
