@@ -6,7 +6,7 @@ import util.convert as convert
 class InteractionMonitor:
 
   def __init__(self, type):
-    if type == "DOGSHEEP":
+    if type == "DOG_SHEEP":
       self.monitor = DogSheepInteractionMonitor()
     else:
       raise Exception("Unsupported monitor type for interaction monitoring")

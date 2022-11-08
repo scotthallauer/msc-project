@@ -17,7 +17,7 @@ def set_simulator(_simulator):
   global individual_fitness_monitor
   global swarm_fitness_monitor
   simulator = _simulator
-  ds_interaction_monitor = InteractionMonitor("DOGSHEEP")
+  ds_interaction_monitor = InteractionMonitor("DOG_SHEEP")
   individual_fitness_monitor = IndividualFitnessMonitor(config.get("pIndividualFitnessAlgorithm", "str"))
   swarm_fitness_monitor = SwarmFitnessMonitor(config.get("pSwarmFitnessAlgorithm", "str"))
 
