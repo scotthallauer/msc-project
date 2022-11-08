@@ -1,5 +1,6 @@
 from util.config_reader import ConfigReader
 from monitor.interaction import InteractionMonitor
+from monitor.behaviour import BehaviourMonitor
 from monitor.individual import IndividualFitnessMonitor
 from monitor.swarm import SwarmFitnessMonitor
 
@@ -14,10 +15,16 @@ def init(_config_filename, _run_id):
 def set_simulator(_simulator):
   global simulator
   global ds_interaction_monitor
+  global zone_behaviour_monitor
+  global dog_behaviour_monitor
+  global sheep_behaviour_monitor
   global individual_fitness_monitor
   global swarm_fitness_monitor
   simulator = _simulator
   ds_interaction_monitor = InteractionMonitor("DOG_SHEEP")
+  zone_behaviour_monitor = BehaviourMonitor("ZONE_DISTANCE")
+  dog_behaviour_monitor = BehaviourMonitor("DOG_DISTANCE")
+  sheep_behaviour_monitor = BehaviourMonitor("SHEEP_DISTANCE")
   individual_fitness_monitor = IndividualFitnessMonitor(config.get("pIndividualFitnessAlgorithm", "str"))
   swarm_fitness_monitor = SwarmFitnessMonitor(config.get("pSwarmFitnessAlgorithm", "str"))
 
