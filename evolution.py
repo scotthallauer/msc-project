@@ -40,6 +40,7 @@ def nsga(individual):
 
 # helper function to reset simulation environment
 def reset_simulator():
+
   # reset robot positions
   for controller in globals.simulator.controllers:
     padding = 20 # distance from sides of arena to avoid placing robots inside walls
@@ -55,8 +56,11 @@ def reset_simulator():
         controller.set_position(x, y)
         break
 
-  # reset fitness monitor
+  # reset monitors
   globals.swarm_fitness_monitor.reset()
+  globals.zone_behaviour_monitor.reset()
+  globals.dog_behaviour_monitor.reset()
+  globals.sheep_behaviour_monitor.reset()
 
 # global list of evaluation algorithms
 evaluators = {
