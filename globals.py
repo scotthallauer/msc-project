@@ -4,7 +4,7 @@ from monitor.behaviour import BehaviourMonitor
 from monitor.individual import IndividualFitnessMonitor
 from monitor.swarm import SwarmFitnessMonitor
 
-def init(_config_filename, _run_id):
+def init(_config_filename: str, _run_id: str):
   global run_id
   global config_filename
   global config

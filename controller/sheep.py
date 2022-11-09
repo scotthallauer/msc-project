@@ -13,7 +13,7 @@ class SheepController:
     self.agent = agent
     self.agent.set_color(*[0, 255, 0])
     self.agent.status = 1 # 1 = free, 0 = captured (only used in CAPTURE task, always free in CONTAIN)
-    self.sensor_fov = (-180, 180)
+    self.sensor_fov = (globals.config.get("sSensorLeftFOV", "int"), globals.config.get("sSensorRightFOV", "int"))
     self.sensor_range = globals.config.get("sSensorRange", "int")
     self.dog_sensor = RadarSensor(self.agent, "dog", self.sensor_range, self.sensor_fov)
     self.sheep_sensor = RadarSensor(self.agent, "sheep", self.sensor_range, self.sensor_fov)

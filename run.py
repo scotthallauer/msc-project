@@ -11,63 +11,72 @@ import random
 import sys
 import os
 
-NB_INPUTS = 1 + (3 * 2) + 2
-NB_HIDDENS = 10
-NB_OUTPUTS = 2
-GENOME_SIZE = (NB_INPUTS * NB_HIDDENS) + (NB_HIDDENS * NB_OUTPUTS)
-
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", list, fitness=creator.FitnessMax)
-
-toolbox = base.Toolbox()
-toolbox.register("attribute", random.uniform, a=-1, b=1)
-toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attribute, n=GENOME_SIZE)
-toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-toolbox.register("mate", tools.cxTwoPoint)
-toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.05)
-toolbox.register("select", tools.selTournament, tournsize=3)
-
-stats = tools.Statistics(lambda ind: ind.fitness.values)
-stats.register("avg", np.mean)
-stats.register("max", np.max)
-
 if __name__ == "__main__":
 
-  # load command line parameters
   try:
 
+    # get command type flag
     COMMAND_FLAG = sys.argv[1]
+
+    # load configuration and checkpoint files
+    if COMMAND_FLAG == "-s":
+      CHECKPOINT_FILENAME = None
+      CHECKPOINT = None
+      RUN_ID = sys.argv[3] if len(sys.argv) == 4 else str(int(time()))
+      CONFIG_FILENAME = sys.argv[2]
+    else:
+      CHECKPOINT_FILENAME = sys.argv[2]
+      with open(CHECKPOINT_FILENAME, "rb") as cp_file:
+        CHECKPOINT = pickle.load(cp_file)
+      RUN_ID = CHECKPOINT["rid"]
+      CONFIG_FILENAME = CHECKPOINT["cfg"]
+    globals.init(CONFIG_FILENAME, RUN_ID)
+    
+    # get neural network dimensions 
+    nb_inputs = globals.config.get("dInputNodes", "int")
+    nb_hiddens = globals.config.get("dHiddenNodes", "int")
+    nb_outputs = globals.config.get("dOutputNodes", "int")
+    genome_size = (nb_inputs * nb_hiddens) + (nb_hiddens * nb_outputs)
+
+    # create fitness and individual objects
+    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+    creator.create("Individual", list, fitness=creator.FitnessMax)
+
+    # define genetic operators to use
+    toolbox = base.Toolbox()
+    toolbox.register("attribute", random.uniform, a=-1, b=1)
+    toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attribute, n=genome_size)
+    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+    toolbox.register("mate", tools.cxTwoPoint)
+    toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.05)
+    toolbox.register("select", tools.selTournament, tournsize=3)
+    toolbox.register("evaluate", evolution.evaluators[globals.config.get("pEvolutionAlgorithm", "str")])
+
+    # define statistics to track
+    stats = tools.Statistics(lambda ind: ind.fitness.values)
+    stats.register("avg", np.mean)
+    stats.register("max", np.max)
 
     # start a new evolution simulation
     if COMMAND_FLAG == "-s":
-      run_id = sys.argv[3] if len(sys.argv) == 4 else str(int(time()))
-      globals.init(_config_filename=sys.argv[2], _run_id=run_id)
-      population = toolbox.population(n=globals.config.get("pPopulationSize", "int"))
-      start_gen = 0
-      halloffame = tools.HallOfFame(maxsize=1)
-      logbook = tools.Logbook()
+      population        = toolbox.population(n=globals.config.get("pPopulationSize", "int"))
+      start_generation  = 0
+      hall_of_fame      = tools.HallOfFame(maxsize=1)
+      logbook           = tools.Logbook()
 
     # resume a previous evolution simulation
     elif COMMAND_FLAG == "-r":
-      CHECKPOINT_FILENAME = sys.argv[2]
-      with open(CHECKPOINT_FILENAME, "rb") as cp_file:
-        cp = pickle.load(cp_file)
-      globals.init(_config_filename=cp["configfile"], _run_id=cp["rid"])
-      population = cp["population"]
-      start_gen = cp["generation"] + 1
-      halloffame = cp["halloffame"]
-      logbook = cp["logbook"]
-      random.setstate(cp["rndstate"])
+      population        = CHECKPOINT["pop"]
+      start_generation  = CHECKPOINT["gen"] + 1
+      hall_of_fame      = CHECKPOINT["hof"]
+      logbook           = CHECKPOINT["log"]
+      random.setstate(CHECKPOINT["rnd"])
 
     # export all statistic results from checkpoint
     elif COMMAND_FLAG == "-e":
-      CHECKPOINT_FILENAME = sys.argv[2]
-      with open(CHECKPOINT_FILENAME, "rb") as cp_file:
-        cp = pickle.load(cp_file)
-      globals.init(_config_filename=cp["configfile"], _run_id=cp["rid"])
-      logbook = cp["logbook"]
-      results = logbook.select("gen", "evals", "avg", "max")
-      logger = ResultLogger("results", ["generation", "evaluations", "average fitness", "max fitness"])
+      logbook = CHECKPOINT["log"]
+      results = logbook.select("gen", "avg", "max")
+      logger = ResultLogger("results", ["generation", "average fitness", "max fitness"])
       for i in range(len(results[0])):
         logger.append([results[0][i], results[1][i], results[2][i], results[3][i]])
       print("Results exported.")
@@ -75,25 +84,22 @@ if __name__ == "__main__":
 
     # view simulation of elite individual from a checkpoint
     elif COMMAND_FLAG == "-v":
-      CHECKPOINT_FILENAME = sys.argv[2]
-      with open(CHECKPOINT_FILENAME, "rb") as cp_file:
-        cp = pickle.load(cp_file)
-      temp_conf_filename = "config/temp.properties"
-      with open(cp["configfile"], "r") as orig_conf_file, open(temp_conf_filename, "w") as temp_conf_file:
-        for line in orig_conf_file:
+      TEMP_FILENAME = "config/temp.properties"
+      with open(CHECKPOINT["cfg"], "r") as orig_file, open(TEMP_FILENAME, "w") as temp_file:
+        for line in orig_file:
           if line.find("gBatchMode") == -1:
-            temp_conf_file.write(line)
+            temp_file.write(line)
           else:
-            temp_conf_file.write("gBatchMode = false")
-      globals.init(_config_filename=temp_conf_filename, _run_id=cp["rid"])
-      elite = cp["halloffame"].items[0]
+            temp_file.write("gBatchMode = false")
+      globals.init(TEMP_FILENAME, CHECKPOINT["rid"])
+      elite = CHECKPOINT["hof"].items[0]
       simulator = Pyroborobo.create(globals.config_filename, controller_class=BaseController)
       simulator.start()
       globals.set_simulator(simulator)
       fitness = evolution.evaluators["SSGA"](elite)[0]
       print("Fitness = " + str(fitness))
       simulator.close()
-      os.remove(temp_conf_filename)
+      os.remove(TEMP_FILENAME)
       exit(0)
 
   except SystemExit:
@@ -109,16 +115,13 @@ if __name__ == "__main__":
     print("View Simulation:\tpython run.py -v <checkpoint file>")
     exit(1)
 
-  # set evaluation method based on selected algorithm
-  toolbox.register("evaluate", evolution.evaluators[globals.config.get("pEvolutionAlgorithm", "str")])
-
   # load config and start simulator
   simulator = Pyroborobo.create(globals.config_filename, controller_class=BaseController)
   simulator.start()
   globals.set_simulator(simulator)
 
   # run all generation simulations
-  for generation in range(start_gen, globals.config.get("pSimulationGenerations", "int")):
+  for generation in range(start_generation, globals.config.get("pSimulationGenerations", "int")):
     print("*" * 10, generation, "*" * 10)
 
     # select the next generation individuals
@@ -150,21 +153,22 @@ if __name__ == "__main__":
     globals.set_population(population)
 
     # record stats
-    halloffame.update(population)
+    hall_of_fame.update(population)
     record = stats.compile(population)
-    logbook.record(gen=generation, evals=len(offspring), **record)
-    print(len(offspring), "evaluations")
+    logbook.record(gen=generation, **record)
+    print("Avg Fitness: " + str(record["avg"]))
+    print("Max Fitness: " + str(record["max"]))
 
     # save checkpoint
     if generation % globals.config.get("pCheckpointInterval", "int") == 0:
       cp = dict(
         rid=globals.run_id,
-        population=population, 
-        generation=generation, 
-        halloffame=halloffame, 
-        logbook=logbook, 
-        rndstate=random.getstate(), 
-        configfile=globals.config_filename
+        pop=population, 
+        gen=generation, 
+        hof=hall_of_fame, 
+        log=logbook, 
+        rnd=random.getstate(), 
+        cfg=globals.config_filename
       )
       cp_dir = "./output/run_" + globals.run_id + "/checkpoints"
       if not os.path.exists(cp_dir):

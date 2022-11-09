@@ -1,5 +1,6 @@
 import torch
 import util.categorise as categorise
+import util.calculate as calculate
 import numpy as np
 import globals
 from controller.radar import RadarSensor
@@ -13,41 +14,45 @@ class DogController:
   def __init__(self, agent):
     self.agent = agent
     self.agent.set_color(*[255, 0, 0])
-    self.nb_inputs = 1 + (3 * 2) + 2 # bias + radar sensors (dogs, sheep & walls) + landmark
-    self.nb_hiddens = 10
-    self.nb_outputs = 2
-    self.sensor_fov = (-90, 90)
+    self.target_coords = [globals.config.get("pTargetZoneCoordX", "int"), globals.config.get("pTargetZoneCoordY", "int")]
+    self.target_radius = globals.config.get("pTargetZoneRadius", "int")
+    self.arena_width = globals.config.get("gArenaWidth", "int")
+    self.arena_height = globals.config.get("gArenaHeight", "int")
+    self.sensor_fov = (globals.config.get("dSensorLeftFOV", "int"), globals.config.get("dSensorRightFOV", "int"))
     self.sensor_range = globals.config.get("dSensorRange", "int")
     self.dog_sensor = RadarSensor(self.agent, "dog", self.sensor_range, self.sensor_fov)
     self.sheep_sensor = RadarSensor(self.agent, "sheep", self.sensor_range, self.sensor_fov)
     self.wall_sensor = RadarSensor(self.agent, "wall", self.sensor_range, self.sensor_fov)
-    self.network = NeuralNetwork(self.nb_inputs, self.nb_hiddens, self.nb_outputs)
+    self.network = NeuralNetwork(globals.config.get("dInputNodes", "int"), globals.config.get("dHiddenNodes", "int"), globals.config.get("dOutputNodes", "int"))
     self.genome = None
-    self.swarm_fitness_algorithm = globals.config.get("pSwarmFitnessAlgorithm", "str")
+    self.max_target_distance = max(
+      calculate.distance_between_points([0, 0], self.target_coords),
+      calculate.distance_between_points([0, self.arena_height], self.target_coords),
+      calculate.distance_between_points([self.arena_width, 0], self.target_coords),
+      calculate.distance_between_points([self.arena_width, self.arena_height], self.target_coords)
+    ) - self.target_radius # distance from furthest arena corner to target zone border
 
   def reset(self):
     pass
 
   def step(self):
-    if self.swarm_fitness_algorithm == "MINGLE":
+    if globals.config.get("pSwarmFitnessAlgorithm", "str") == "MINGLE":
       globals.ds_interaction_monitor.track(self.agent)
-    output = self.network(torch.FloatTensor(self.get_inputs().reshape((1, self.nb_inputs))))
+    input = torch.FloatTensor(self.get_inputs().reshape((1, globals.config.get("dInputNodes", "int"))))
+    output = self.network(input)
     self.agent.set_translation(output[0,0])
     self.agent.set_rotation(output[0,1])
 
   def get_inputs(self):
-    bias = [1]
-
     # distance inputs are normalised between 0 and 1 (where 0 is undetected and 1 is as close as possible)
+    # angle inputs are normalised between -1 and 1 (where -1 is -180 degrees and 1 is 180 degrees)
     wall_detection = self.wall_sensor.detect()
     dog_detection = self.dog_sensor.detect()
     sheep_detection = self.sheep_sensor.detect()
-
-    landmark_dist = 1 - self.agent.get_closest_landmark_dist() # distance to the closest landmark -- normalized btw 0 and 1 (1 = close as possible)
-    landmark_orient = self.agent.get_closest_landmark_orientation() # angle to closest landmark -- normalized btw -1 and +1
-    
-    inputs = np.concatenate((bias, wall_detection, dog_detection, sheep_detection, [landmark_dist, landmark_orient]))
-    return inputs
+    landmark_distance = 1 - (calculate.distance_from_target_zone(self.agent.absolute_position, self.target_coords, self.target_radius) / self.max_target_distance)
+    landmark_angle = self.agent.get_closest_landmark_orientation()
+    landmark_detection = [landmark_distance, landmark_angle]
+    return np.concatenate((wall_detection, dog_detection, sheep_detection, landmark_detection))
 
   def set_genome(self, genome):
     self.genome = genome
