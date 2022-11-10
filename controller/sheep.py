@@ -55,7 +55,7 @@ class SheepController:
     ]
 
     # target zone avoidance (for CAPTURE task)
-    if globals.config.get("pTaskEnvironment", "str") == "CAPTURE" and (dog_distance == 0 or dog_distance > avoidances[1]):
+    if globals.config.get("pTaskEnvironment", "str") == "CAPTURE" and (dog_distance == -1 or dog_distance > avoidances[1]):
       target_coords = [globals.config.get("pTargetZoneCoordX", "int"), globals.config.get("pTargetZoneCoordY", "int")]
       target_radius = globals.config.get("pTargetZoneRadius", "int")
       target_distance = calculate.distance_from_target_zone(self.agent.absolute_position, target_coords, target_radius)
