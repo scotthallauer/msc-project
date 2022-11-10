@@ -8,9 +8,13 @@ def init(_config_filename: str, _run_id: str):
   global run_id
   global config_filename
   global config
+  global total_evaluations
+  global current_evaluations
   run_id = _run_id
   config_filename = _config_filename
   config = ConfigReader(_config_filename)
+  total_evaluations = config.get("pPopulationSize", "int")
+  current_evaluations = 0
 
 def set_simulator(_simulator):
   global simulator

@@ -11,6 +11,10 @@ import random
 import sys
 import os
 
+# create fitness and individual objects
+creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+creator.create("Individual", list, fitness=creator.FitnessMax)
+
 if __name__ == "__main__":
 
   try:
@@ -37,10 +41,6 @@ if __name__ == "__main__":
     nb_hiddens = globals.config.get("dHiddenNodes", "int")
     nb_outputs = globals.config.get("dOutputNodes", "int")
     genome_size = (nb_inputs * nb_hiddens) + (nb_hiddens * nb_outputs)
-
-    # create fitness and individual objects
-    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-    creator.create("Individual", list, fitness=creator.FitnessMax)
 
     # define genetic operators to use
     toolbox = base.Toolbox()
@@ -78,7 +78,7 @@ if __name__ == "__main__":
       results = logbook.select("gen", "avg", "max")
       logger = ResultLogger("results", ["generation", "average fitness", "max fitness"])
       for i in range(len(results[0])):
-        logger.append([results[0][i], results[1][i], results[2][i], results[3][i]])
+        logger.append([results[0][i], results[1][i], results[2][i]])
       print("Results exported.")
       exit(0)
 
@@ -122,6 +122,11 @@ if __name__ == "__main__":
 
   # run all generation simulations
   for generation in range(start_generation, globals.config.get("pSimulationGenerations", "int")):
+
+    # start generation
+    start_time = time()
+    globals.current_evaluations = 0
+    print("Progress: 0%", end="\r", flush=True)
     print("*" * 10, generation, "*" * 10)
 
     # select the next generation individuals
@@ -156,8 +161,8 @@ if __name__ == "__main__":
     hall_of_fame.update(population)
     record = stats.compile(population)
     logbook.record(gen=generation, **record)
-    print("Avg Fitness: " + str(record["avg"]))
-    print("Max Fitness: " + str(record["max"]))
+    print("Average Fitness: " + str(record["avg"]))
+    print("Maximum Fitness: " + str(record["max"]))
 
     # save checkpoint
     if generation % globals.config.get("pCheckpointInterval", "int") == 0:
@@ -175,5 +180,9 @@ if __name__ == "__main__":
         os.makedirs(cp_dir)
       with open(cp_dir + "/gen_" + str(generation) + ".pkl", "wb") as cp_file:
         pickle.dump(cp, cp_file)
+
+    # end generation
+    end_time = time()
+    print("Elapsed Time: " + str(end_time - start_time) + " seconds")
 
   simulator.close()

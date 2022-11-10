@@ -15,6 +15,8 @@ def ssga(individual):
   # run simulation
   reset_simulator()
   globals.simulator.update(globals.config.get("pSimulationLifetime", "int"))
+  globals.current_evaluations += 1
+  print("Progress: " + str(int((globals.current_evaluations / globals.total_evaluations) * 100.0)) + "%", end="\r", flush=True)
 
   return globals.swarm_fitness_monitor.score(),
 
@@ -35,6 +37,8 @@ def nsga(individual):
   # run simulation
   reset_simulator()
   globals.simulator.update(globals.config.get("pSimulationLifetime", "int"))
+  globals.current_evaluations += 1
+  print("Progress: " + str(int((globals.current_evaluations / globals.total_evaluations) * 100.0)) + "%", end="\r", flush=True)
 
   return globals.swarm_fitness_monitor.score(),
 
