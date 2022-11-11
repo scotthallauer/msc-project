@@ -40,19 +40,20 @@ class DogController:
       globals.ds_interaction_monitor.track(self.agent)
     input = torch.FloatTensor(self.get_inputs().reshape((1, globals.config.get("dInputNodes", "int"))))
     output = self.network(input)
-    self.agent.set_translation(output[0,0])
+    self.agent.set_translation(output[0,0] * globals.config.get("dMaxTranslationSpeed", "float"))
     self.agent.set_rotation(output[0,1])
 
   def get_inputs(self):
     # distance inputs are normalised between 0 and 1 (where 0 is undetected and 1 is as close as possible)
     # angle inputs are normalised between -1 and 1 (where -1 is -180 degrees and 1 is 180 degrees)
+    bias = [1]
     wall_detection = self.wall_sensor.detect()
     dog_detection = self.dog_sensor.detect()
     sheep_detection = self.sheep_sensor.detect()
     landmark_distance = 1 - (calculate.distance_from_target_zone(self.agent.absolute_position, self.target_coords, self.target_radius) / self.max_target_distance)
     landmark_angle = self.agent.get_closest_landmark_orientation()
     landmark_detection = [landmark_distance, landmark_angle]
-    return np.concatenate((wall_detection, dog_detection, sheep_detection, landmark_detection))
+    return np.concatenate((bias, wall_detection, dog_detection, sheep_detection, landmark_detection))
 
   def set_genome(self, genome):
     self.genome = genome

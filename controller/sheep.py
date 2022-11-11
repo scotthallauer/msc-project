@@ -36,7 +36,7 @@ class SheepController:
       self.agent.set_translation(0)
       return
 
-    self.agent.set_translation(0.8)
+    self.agent.set_translation(globals.config.get("sTranslationSpeed", "float"))
     self.agent.set_rotation(0)
 
     self.fly_towards_center()
