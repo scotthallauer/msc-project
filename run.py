@@ -3,6 +3,7 @@ from deap import base, creator, tools
 from controller.base import BaseController
 from util.result_logger import ResultLogger
 from time import time
+import util.convert as convert
 import numpy as np
 import evolution
 import globals
@@ -28,13 +29,15 @@ if __name__ == "__main__":
       CHECKPOINT = None
       RUN_ID = sys.argv[3] if len(sys.argv) == 4 else str(int(time()))
       CONFIG_FILENAME = sys.argv[2]
+      START_GENERATION = 1
     else:
       CHECKPOINT_FILENAME = sys.argv[2]
       with open(CHECKPOINT_FILENAME, "rb") as cp_file:
         CHECKPOINT = pickle.load(cp_file)
       RUN_ID = CHECKPOINT["rid"]
       CONFIG_FILENAME = CHECKPOINT["cfg"]
-    globals.init(CONFIG_FILENAME, RUN_ID)
+      START_GENERATION = CHECKPOINT["gen"] + 1
+    globals.init(CONFIG_FILENAME, RUN_ID, START_GENERATION)
     
     # get neural network dimensions 
     nb_inputs = globals.config.get("dInputNodes", "int")
@@ -60,14 +63,12 @@ if __name__ == "__main__":
     # start a new evolution simulation
     if COMMAND_FLAG == "-s":
       population        = toolbox.population(n=globals.config.get("pPopulationSize", "int"))
-      start_generation  = 0
       hall_of_fame      = tools.HallOfFame(maxsize=1)
       logbook           = tools.Logbook()
 
     # resume a previous evolution simulation
     elif COMMAND_FLAG == "-r":
       population        = CHECKPOINT["pop"]
-      start_generation  = CHECKPOINT["gen"] + 1
       hall_of_fame      = CHECKPOINT["hof"]
       logbook           = CHECKPOINT["log"]
       random.setstate(CHECKPOINT["rnd"])
@@ -91,7 +92,7 @@ if __name__ == "__main__":
             temp_file.write(line)
           else:
             temp_file.write("gBatchMode = false")
-      globals.init(TEMP_FILENAME, CHECKPOINT["rid"])
+      globals.init(TEMP_FILENAME, CHECKPOINT["rid"], 1)
       elite = CHECKPOINT["hof"].items[0]
       simulator = Pyroborobo.create(globals.config_filename, controller_class=BaseController)
       simulator.start()
@@ -121,13 +122,12 @@ if __name__ == "__main__":
   globals.set_simulator(simulator)
 
   # run all generation simulations
-  for generation in range(start_generation, globals.config.get("pSimulationGenerations", "int")):
+  for generation in range(START_GENERATION, globals.config.get("pSimulationGenerations", "int") + 1):
 
     # start generation
-    start_time = time()
-    globals.current_evaluations = 0
-    print("Progress: 0%", end="\r", flush=True)
+    globals.progress_monitor.start_generation()
     print("*" * 10, generation, "*" * 10)
+    print("Starting...", end="\r", flush=True)
 
     # select the next generation individuals
     offspring = toolbox.select(population, len(population))
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     hall_of_fame.update(population)
     record = stats.compile(population)
     logbook.record(gen=generation, **record)
-    print("Average Fitness: " + str(record["avg"]))
+    print("Average Fitness: " + str(record["avg"]) + "                            ") # spaces to clear progress output
     print("Maximum Fitness: " + str(record["max"]))
 
     # save checkpoint
@@ -182,7 +182,7 @@ if __name__ == "__main__":
         pickle.dump(cp, cp_file)
 
     # end generation
-    end_time = time()
-    print("Elapsed Time: " + str(end_time - start_time) + " seconds")
+    gen_duration = globals.progress_monitor.end_generation()
+    print("Elapsed Time: " + convert.seconds_to_readable_duration(gen_duration))
 
   simulator.close()

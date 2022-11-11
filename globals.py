@@ -3,18 +3,19 @@ from monitor.interaction import InteractionMonitor
 from monitor.behaviour import BehaviourMonitor
 from monitor.individual import IndividualFitnessMonitor
 from monitor.swarm import SwarmFitnessMonitor
+from monitor.progress import ProgressMonitor
 
-def init(_config_filename: str, _run_id: str):
+def init(_config_filename: str, _run_id: str, _start_generation: int):
   global run_id
   global config_filename
   global config
-  global total_evaluations
-  global current_evaluations
+  global start_generation
+  global progress_monitor
   run_id = _run_id
   config_filename = _config_filename
   config = ConfigReader(_config_filename)
-  total_evaluations = config.get("pPopulationSize", "int")
-  current_evaluations = 0
+  start_generation = _start_generation
+  progress_monitor = ProgressMonitor(start_generation)
 
 def set_simulator(_simulator):
   global simulator

@@ -56,3 +56,26 @@ def displacement_to_velocity(dx, dy):
       degrees = 360 - angle
     translation = abs(dy) / math.sin(math.radians(angle))
   return (degrees, translation)
+
+def seconds_to_readable_duration(seconds: float):
+  minute = 60
+  hour = minute * 60
+  day = hour * 24
+  week = day * 7
+  remaining = seconds
+  output = ""
+  if remaining >= week:
+    output += str(math.floor(remaining/week)) + "w "
+    remaining = remaining % week
+  if remaining >= day:
+    output += str(math.floor(remaining/day)) + "d "
+    remaining = remaining % day
+  if remaining >= hour:
+    output += str(math.floor(remaining/hour)) + "h "
+    remaining = remaining % hour
+  if remaining >= minute:
+    output += str(math.floor(remaining/minute)) + "m "
+    remaining = remaining % minute
+  if remaining > 0:
+    output += str(math.ceil(remaining)) + "s "
+  return output.strip()

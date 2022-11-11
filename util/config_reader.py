@@ -1,6 +1,6 @@
 from configparser import ConfigParser
 
-class ConfigReader():
+class ConfigReader:
 
   def __init__(self, config_filename):
     self.config_filename = config_filename
