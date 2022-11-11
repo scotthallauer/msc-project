@@ -88,16 +88,19 @@ if __name__ == "__main__":
       TEMP_FILENAME = "config/temp.properties"
       with open(CHECKPOINT["cfg"], "r") as orig_file, open(TEMP_FILENAME, "w") as temp_file:
         for line in orig_file:
-          if line.find("gBatchMode") == -1:
-            temp_file.write(line)
+          if line.find("gBatchMode") >= 0:
+            temp_file.write("gBatchMode = false\n")
+          elif line.find("pEvaluationTrials") >= 0:
+            temp_file.write("pEvaluationTrials = 1\n")
           else:
-            temp_file.write("gBatchMode = false")
+            temp_file.write(line)
       globals.init(TEMP_FILENAME, CHECKPOINT["rid"], 1)
       elite = CHECKPOINT["hof"].items[0]
       simulator = Pyroborobo.create(globals.config_filename, controller_class=BaseController)
       simulator.start()
       globals.set_simulator(simulator)
       fitness = evolution.evaluators["SSGA"](elite)[0]
+      print(end='\x1b[2K') # clear line
       print("Fitness = " + str(fitness))
       simulator.close()
       os.remove(TEMP_FILENAME)
@@ -161,7 +164,8 @@ if __name__ == "__main__":
     hall_of_fame.update(population)
     record = stats.compile(population)
     logbook.record(gen=generation, **record)
-    print("Average Fitness: " + str(record["avg"]) + "                            ") # spaces to clear progress output
+    print(end='\x1b[2K') # clear line
+    print("Average Fitness: " + str(record["avg"]))
     print("Maximum Fitness: " + str(record["max"]))
 
     # save checkpoint

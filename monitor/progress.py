@@ -69,7 +69,8 @@ class ProgressMonitor:
       return convert.seconds_to_readable_duration(average_duration * remaining_trials)
 
   def print(self):
-    print("Progress: " + self.report("percent", "generation") + " | Time Remaining: " + self.report("duration", "generation") + " (gen), " + self.report("duration", "run") + " (run)                  ", end="\r", flush=True)
+    print(end='\x1b[2K') # clear line
+    print("Progress: " + self.report("percent", "generation") + " | Time Remaining: " + self.report("duration", "generation") + " (gen), " + self.report("duration", "run") + " (run)", end="\r", flush=True)
 
 
 class Timer:
