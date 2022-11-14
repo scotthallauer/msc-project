@@ -20,7 +20,7 @@ Check that conda is installed in your cluster environment:
 conda list
 ```
 
-If not, you will need to install it before continuing. The process will probably differ between cluster envirnoments, but here is how it done on the CHPC:
+If not, you will need to install it before continuing. The process will probably differ between cluster envirnoments, but here is how it is done on the CHPC:
 
 ```
 # check available python modules
@@ -34,38 +34,16 @@ python3 --version
 
 ### Step 3: Install roborobo
 
-Create a conda environment:
+If roborobo4 is not installed, you need to activate the necessary module. This is how it is done on the CHPC:
 
 ```
-conda create --name roborobo numpy pybind11 
-conda activate roborobo
+module load chpc/BIOMODULES roborobo4
 ```
 
-Install Python dependencies for Roborobo (numpy, pybind11, sphinx, etc.):
+### Step 4: Upload source code
+
+From a new terminal session (i.e. a session that is not logged into the cluster via SSH), upload the source code as follows:
 
 ```
-conda install numpy setuptools
-conda install -c conda-forge pybind11
-conda install sphinx recommonmark sphinx_rtd_theme numpydoc
+scp -r "/Users/scott/Local/GitHub Projects/scotthallauer/msc-project" shallauer@lengau.chpc.ac.za:~/msc-project
 ```
-
-Install C++ dependencies for Roborobo (Cmake, SDL2, boost and eigen):
-
-```
-# if you have sudo access...
-sudo apt install git build-essential cmake
-sudo apt-get install libsdl2-dev libsdl2-image-dev libboost-dev libeigen3-dev
-
-# alternatively...
-module load chpc/git/2.14
-module load chpc/build-essentials/gnu_0.1
-module load chpc/cmake/3.20.0/gcc-6.1.0
-
-git clone https://github.com/libsdl-org/SDL
-cd SDL
-mkdir build
-cd build
-../configure
-make
-```
-

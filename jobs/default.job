@@ -1,0 +1,22 @@
+#!/bin/bash
+#PBS -l select=10:ncpus=24:mpiprocs=24:nodetype=haswell_reg
+#PBS -P CSCI1142
+#PBS -q normal
+#PBS -l walltime=48:00:00
+#PBS -o /mnt/lustre/users/shallauer/msc-project/output/run_test/job.out
+#PBS -e /mnt/lustre/users/shallauer/msc-project/output/run_test/job.err
+#PBS -m abe
+#PBS -M scott.hallauer@gmail.com
+
+ulimit -s unlimited
+
+nproc=`cat $PBS_NODEFILE | wc -l`
+echo nproc is $nproc
+cat $PBS_NODEFILE
+
+cd /mnt/lustre/users/shallauer/msc-project
+module purge
+module load chpc/python/anaconda/3-2021.11
+module load chpc/BIOMODULES roborobo4
+conda activate roborobo
+python run.py -s config/ssga-short.properties test
