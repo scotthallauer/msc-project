@@ -20,14 +20,14 @@ def init(_config_filename: str, _run_id: str, _start_generation: int):
 def set_simulator(_simulator):
   global simulator
   global ds_interaction_monitor
-  global zone_behaviour_monitor
+  global pen_behaviour_monitor
   global dog_behaviour_monitor
   global sheep_behaviour_monitor
   global individual_fitness_monitor
   global swarm_fitness_monitor
   simulator = _simulator
   ds_interaction_monitor = InteractionMonitor("DOG_SHEEP")
-  zone_behaviour_monitor = BehaviourMonitor("ZONE_DISTANCE")
+  pen_behaviour_monitor = BehaviourMonitor("PEN_DISTANCE")
   dog_behaviour_monitor = BehaviourMonitor("DOG_DISTANCE")
   sheep_behaviour_monitor = BehaviourMonitor("SHEEP_DISTANCE")
   individual_fitness_monitor = IndividualFitnessMonitor(config.get("pIndividualFitnessAlgorithm", "str"))

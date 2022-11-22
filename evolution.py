@@ -66,7 +66,7 @@ def reset_simulator():
         break
   # reset monitors
   globals.swarm_fitness_monitor.reset()
-  globals.zone_behaviour_monitor.reset()
+  globals.pen_behaviour_monitor.reset()
   globals.dog_behaviour_monitor.reset()
   globals.sheep_behaviour_monitor.reset()
 
