@@ -20,7 +20,7 @@ class BaseController(Controller):
 
   def step(self):  # step is called at each time step
     if self.get_id() == 1:
-      globals.swarm_fitness_monitor.track()
+      globals.fitness_monitor.track()
       if self.behaviour_monitoring:
         globals.zone_behaviour_monitor.track()
         globals.dog_behaviour_monitor.track()
