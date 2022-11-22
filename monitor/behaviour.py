@@ -2,11 +2,13 @@ import globals
 import util.categorise as categorise
 import util.calculate as calculate
 
+# normalise outputs
+
 class BehaviourMonitor:
 
   def __init__(self, type):
-    if type == "ZONE_DISTANCE":
-      self.monitor = ZoneDistanceBehaviourMonitor()
+    if type == "PEN_DISTANCE":
+      self.monitor = PenDistanceBehaviourMonitor()
     elif type == "DOG_DISTANCE":
       self.monitor = DogDistanceBehaviourMonitor()
     elif type == "SHEEP_DISTANCE":
@@ -27,7 +29,7 @@ class BehaviourMonitor:
     self.monitor.reset()
 
 
-class ZoneDistanceBehaviourMonitor:
+class PenDistanceBehaviourMonitor:
 
   def __init__(self):
     self.target_coords = [globals.config.get("pTargetZoneCoordX", "int"), globals.config.get("pTargetZoneCoordY", "int")]
