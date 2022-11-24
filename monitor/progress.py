@@ -1,97 +1,58 @@
-import globals
-import math
+from multiprocessing import Process
 import util.convert as convert
-from time import time
+import time
+import math
 
-class ProgressMonitor:
+class ProgressMonitor(Process):
 
-  def __init__(self, start_generation: int):
-    self.total_generations = globals.config.get("pSimulationGenerations", "int")
-    self.total_individuals = globals.config.get("pPopulationSize", "int")
-    self.total_trials = globals.config.get("pEvaluationTrials", "int")
-    self.current_generation = start_generation
-    self.current_individual = 1
-    self.current_trial = 1
-    self.generation_timer = Timer()
-    self.individual_timer = Timer()
-    self.trial_timer = Timer()
-    self.duration_history = []
-  
-  def start_generation(self):
-    self.generation_timer.start()
+  def __init__(self, nb_processes: int, nb_evaluations: int, nb_generations: int, current_generation: int, process_output: dict):
+    Process.__init__(self)
+    self.nb_processes = nb_processes
+    self.nb_evaluations = nb_evaluations
+    self.nb_generations = nb_generations
+    self.complete_evaluations = 0
+    self.complete_generations = current_generation - 1
+    self.process_output = process_output
+    self.start_time = time.time()
+    self.update_time = None
 
-  def end_generation(self):
-    self.generation_timer.stop()
-    self.current_generation += 1
-    self.current_individual = 1
-    self.current_trial = 1
-    return self.generation_timer.raw_duration()
+  def run(self):
+    while True:
+      self.__update_complete_evaluations()
+      print(end='\x1b[2K') # clear line
+      print("Progress: " + self.__get_generation_percent() + " | Time Remaining: " + self.__get_generation_duration() + " (generation), " + self.__get_run_duration() + " (run)", end="\r", flush=True)
+      if self.complete_evaluations == self.nb_evaluations:
+        break
+      time.sleep(1)
 
-  def start_individual(self):
-    self.individual_timer.start()
+  def __update_complete_evaluations(self):
+    count = 0
+    for i in range(self.nb_processes):
+      if i in self.process_output:
+        count += len(self.process_output[i])
+    if count > self.complete_evaluations:
+      self.complete_evaluations = count
+      self.update_time = time.time()
 
-  def end_individual(self):
-    self.individual_timer.stop()
-    self.current_individual += 1
-    self.current_trial = 1
-    return self.individual_timer.raw_duration()
+  def __get_generation_percent(self):
+    return str(math.floor((self.complete_evaluations / self.nb_evaluations) * 100.0)) + "%"
 
-  def start_trial(self):
-    self.trial_timer.start()
-
-  def end_trial(self):
-    self.trial_timer.stop()
-    self.duration_history.append(self.trial_timer.raw_duration())
-    if len(self.duration_history) > 10:
-      self.duration_history.pop(0)
-    self.current_trial += 1
-    return self.trial_timer.raw_duration()
-
-  def report(self, type="percent", scope="run"):
-    if scope == "run":
-      remaining_generations = self.total_generations - self.current_generation
+  def __get_generation_duration(self):
+    if self.update_time is None:
+      return "Estimating..."
     else:
-      remaining_generations = 0
-    remaining_individuals = (remaining_generations * self.total_individuals) + (self.total_individuals - self.current_individual)
-    remaining_trials = (remaining_individuals * self.total_trials) + (self.total_trials - self.current_trial)
-    if type == "percent":
-      if scope == "run":
-        total_trials = self.total_generations * self.total_individuals * self.total_trials
-        current_trial = ((self.current_generation - 1) * self.total_individuals * self.total_trials) + ((self.current_individual - 1) * self.total_trials) + (self.current_trial - 1)
-      elif scope == "generation":
-        total_trials = self.total_individuals * self.total_trials
-        current_trial = ((self.current_individual - 1) * self.total_trials) + (self.current_trial - 1)
-      return str(math.floor(current_trial / total_trials * 100.0)) + "%"
-    elif type == "duration":
-      if len(self.duration_history) == 0:
-        return "Estimating..."
-      average_duration = sum(self.duration_history) / len(self.duration_history)
-      return convert.seconds_to_readable_duration(average_duration * remaining_trials)
+      evaluation_duration = (self.update_time - self.start_time) / self.complete_evaluations
+      generation_duration = (self.nb_evaluations - self.complete_evaluations) * evaluation_duration - (time.time() - self.update_time)
+      generation_duration = max(0, generation_duration)
+      return convert.seconds_to_readable_duration(generation_duration)
 
-  def print(self):
-    print(end='\x1b[2K') # clear line
-    print("Progress: " + self.report("percent", "generation") + " | Time Remaining: " + self.report("duration", "generation") + " (gen), " + self.report("duration", "run") + " (run)", end="\r", flush=True)
-
-
-class Timer:
-
-  def __init__(self):
-    self.start_time = None
-    self.end_time = None
-
-  def start(self):
-    self.reset()
-    self.start_time = time()
-
-  def stop(self):
-    self.end_time = time()
-
-  def raw_duration(self):
-    return (self.end_time - self.start_time)
-
-  def readable_duration(self):
-    return convert.seconds_to_readable_duration(self.raw_duration())
-
-  def reset(self):
-    self.start_time = None
-    self.end_time = None
+  def __get_run_duration(self):
+    if self.update_time is None:
+      return "Estimating..."
+    else:
+      evaluation_duration = (self.update_time - self.start_time) / self.complete_evaluations
+      full_generation_duration = self.nb_evaluations * evaluation_duration
+      current_generation_duration = (self.nb_evaluations - self.complete_evaluations) * evaluation_duration - (time.time() - self.update_time)
+      current_generation_duration = max(0, current_generation_duration)
+      run_duration = ((self.nb_generations - self.complete_generations - 1) * full_generation_duration) + current_generation_duration
+      return convert.seconds_to_readable_duration(run_duration)
