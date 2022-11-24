@@ -1,12 +1,12 @@
-from pyroborobo import Pyroborobo
 from deap import base, creator, tools
-from controller.base import BaseController
+from util.config_reader import ConfigReader
 from util.result_logger import ResultLogger
-from time import time
+from evaluate import HomogenousEvaluator
 import util.convert as convert
 import numpy as np
-import evolution
-import globals
+import time
+import evaluate
+import multiprocessing
 import pickle
 import random
 import sys
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     if COMMAND_FLAG == "-s":
       CHECKPOINT_FILENAME = None
       CHECKPOINT = None
-      RUN_ID = sys.argv[3] if len(sys.argv) == 4 else str(int(time()))
+      RUN_ID = sys.argv[3] if len(sys.argv) == 4 else str(int(time.time()))
       CONFIG_FILENAME = sys.argv[2]
       START_GENERATION = 1
     else:
@@ -37,23 +37,23 @@ if __name__ == "__main__":
       RUN_ID = CHECKPOINT["rid"]
       CONFIG_FILENAME = CHECKPOINT["cfg"]
       START_GENERATION = CHECKPOINT["gen"] + 1
-    globals.init(CONFIG_FILENAME, RUN_ID, START_GENERATION)
+    CONFIG = ConfigReader(CONFIG_FILENAME)
     
     # get neural network dimensions 
-    nb_inputs = globals.config.get("dInputNodes", "int")
-    nb_hiddens = globals.config.get("dHiddenNodes", "int")
-    nb_outputs = globals.config.get("dOutputNodes", "int")
-    genome_size = (nb_inputs * nb_hiddens) + (nb_hiddens * nb_outputs)
+    NB_INPUTS = CONFIG.get("dInputNodes", "int")
+    NB_HIDDENS = CONFIG.get("dHiddenNodes", "int")
+    NB_OUTPUTS = CONFIG.get("dOutputNodes", "int")
+    GENOME_SIZE = (NB_INPUTS * NB_HIDDENS) + (NB_HIDDENS * NB_OUTPUTS)
 
     # define genetic operators to use
     toolbox = base.Toolbox()
     toolbox.register("attribute", random.uniform, a=-1, b=1)
-    toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attribute, n=genome_size)
+    toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attribute, n=GENOME_SIZE)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("mate", tools.cxTwoPoint)
     toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.05)
     toolbox.register("select", tools.selTournament, tournsize=3)
-    toolbox.register("evaluate", evolution.evaluators[globals.config.get("pEvolutionAlgorithm", "str")])
+    toolbox.register("evaluate", evaluate.evaluators[CONFIG.get("pEvolutionAlgorithm", "str")])
 
     # define statistics to track
     stats = tools.Statistics(lambda ind: ind.fitness.values)
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     # start a new evolution simulation
     if COMMAND_FLAG == "-s":
-      population        = toolbox.population(n=globals.config.get("pPopulationSize", "int"))
+      population        = toolbox.population(n=CONFIG.get("pPopulationSize", "int"))
       hall_of_fame      = tools.HallOfFame(maxsize=1)
       logbook           = tools.Logbook()
 
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     elif COMMAND_FLAG == "-e":
       logbook = CHECKPOINT["log"]
       results = logbook.select("gen", "avg", "max")
-      logger = ResultLogger("results", ["generation", "average fitness", "max fitness"])
+      logger = ResultLogger(RUN_ID, "results", ["generation", "average fitness", "max fitness"])
       for i in range(len(results[0])):
         logger.append([results[0][i], results[1][i], results[2][i]])
       print("Results exported.")
@@ -94,15 +94,14 @@ if __name__ == "__main__":
             temp_file.write("pEvaluationTrials = 1\n")
           else:
             temp_file.write(line)
-      globals.init(TEMP_FILENAME, CHECKPOINT["rid"], 1)
       elite = CHECKPOINT["hof"].items[0]
-      simulator = Pyroborobo.create(globals.config_filename, controller_class=BaseController)
-      simulator.start()
-      globals.set_simulator(simulator)
-      fitness = evolution.evaluators["SSGA"](elite)[0]
+      manager = multiprocessing.Manager()
+      process_output = manager.dict()
+      process = HomogenousEvaluator(0, TEMP_FILENAME, CHECKPOINT["rid"], 1, [elite], process_output)
+      process.start()
+      process.join()
       print(end='\x1b[2K') # clear line
-      print("Fitness = " + str(fitness))
-      simulator.close()
+      print("Fitness = " + str(process_output[0][0][0]))
       os.remove(TEMP_FILENAME)
       exit(0)
 
@@ -119,16 +118,12 @@ if __name__ == "__main__":
     print("View Simulation:\tpython run.py -v <checkpoint file>")
     exit(1)
 
-  # load config and start simulator
-  simulator = Pyroborobo.create(globals.config_filename, controller_class=BaseController)
-  simulator.start()
-  globals.set_simulator(simulator)
-
   # run all generation simulations
-  for generation in range(START_GENERATION, globals.config.get("pSimulationGenerations", "int") + 1):
+  NB_GENERATIONS = CONFIG.get("pSimulationGenerations", "int")
+  for generation in range(START_GENERATION, NB_GENERATIONS + 1):
 
     # start generation
-    globals.progress_monitor.start_generation()
+    generation_start = time.time()
     print("*" * 10, generation, "*" * 10)
     print("Starting...", end="\r", flush=True)
 
@@ -139,26 +134,24 @@ if __name__ == "__main__":
 
     # apply crossover on the offspring
     for child1, child2 in zip(offspring[::2], offspring[1::2]):
-      if random.random() < globals.config.get("pCrossoverProbability", "float"):
+      if random.random() < CONFIG.get("pCrossoverProbability", "float"):
         toolbox.mate(child1, child2)
         del child1.fitness.values
         del child2.fitness.values
 
     # apply mutation on the offspring
     for mutant in offspring:
-      if random.random() < globals.config.get("pMutationProbability", "float"):
+      if random.random() < CONFIG.get("pMutationProbability", "float"):
         toolbox.mutate(mutant)
         del mutant.fitness.values
 
     # evaluate all individuals
-    globals.set_offspring(offspring)
-    fitnesses = map(toolbox.evaluate, offspring)
+    fitnesses = toolbox.evaluate(offspring, CONFIG_FILENAME, RUN_ID, NB_GENERATIONS, START_GENERATION, generation)
     for ind, fit in zip(offspring, fitnesses):
       ind.fitness.values = fit
 
     # replace the whole population with the offspring
     population[:] = offspring
-    globals.set_population(population)
 
     # record stats
     hall_of_fame.update(population)
@@ -169,24 +162,21 @@ if __name__ == "__main__":
     print("Maximum Fitness: " + str(record["max"]))
 
     # save checkpoint
-    if generation % globals.config.get("pCheckpointInterval", "int") == 0:
+    if generation % CONFIG.get("pCheckpointInterval", "int") == 0:
       cp = dict(
-        rid=globals.run_id,
+        rid=RUN_ID,
         pop=population, 
         gen=generation, 
         hof=hall_of_fame, 
         log=logbook, 
         rnd=random.getstate(), 
-        cfg=globals.config_filename
+        cfg=CONFIG_FILENAME
       )
-      cp_dir = "./output/run_" + globals.run_id + "/checkpoints"
+      cp_dir = "./output/run_" + RUN_ID + "/checkpoints"
       if not os.path.exists(cp_dir):
         os.makedirs(cp_dir)
       with open(cp_dir + "/gen_" + str(generation) + ".pkl", "wb") as cp_file:
         pickle.dump(cp, cp_file)
 
     # end generation
-    gen_duration = globals.progress_monitor.end_generation()
-    print("Elapsed Time: " + convert.seconds_to_readable_duration(gen_duration))
-
-  simulator.close()
+    print("Elapsed Time: " + convert.seconds_to_readable_duration(time.time() - generation_start))
