@@ -1,7 +1,7 @@
 from deap import base, creator, tools
 from util.config_reader import ConfigReader
 from util.result_logger import ResultLogger
-from evaluate import HomogenousEvaluator
+from evaluator.homogenous import HomogenousEvaluator
 import util.convert as convert
 import numpy as np
 import time

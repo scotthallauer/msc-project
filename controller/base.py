@@ -22,7 +22,7 @@ class BaseController(Controller):
     if self.get_id() == 1:
       globals.fitness_monitor.track()
       if self.behaviour_monitoring:
-        globals.zone_behaviour_monitor.track()
+        globals.pen_behaviour_monitor.track()
         globals.dog_behaviour_monitor.track()
         globals.sheep_behaviour_monitor.track()
     self.controller.step()
