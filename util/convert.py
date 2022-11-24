@@ -76,5 +76,5 @@ def seconds_to_readable_duration(seconds: float):
   if remaining >= minute:
     output += str(math.floor(remaining/minute)) + "m "
     remaining = remaining % minute
-  output += str(math.ceil(remaining)) + "s "
+  output += str(math.floor(remaining)) + "s "
   return output.strip()
