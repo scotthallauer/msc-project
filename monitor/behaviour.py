@@ -2,7 +2,7 @@ import globals
 import util.categorise as categorise
 import util.calculate as calculate
 
-# normalise outputs
+# TODO: normalise outputs
 
 class BehaviourMonitor:
 

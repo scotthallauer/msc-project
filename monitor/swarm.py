@@ -201,7 +201,7 @@ class CrowdFitnessMonitor:
 
 class DwellFitnessMonitor:
 
-  def __init__(self, controllers):
+  def __init__(self):
     self.sheep = categorise.get_sheep()
     self.t = 0
     self.t_max = globals.config.get("pSimulationLifetime", "int")
