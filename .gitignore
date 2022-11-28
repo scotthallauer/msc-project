@@ -1,11 +1,9 @@
 build/
 **/.DS_Store
 **/*.code-workspace
-config/**
 output/**
 jobs/**
 
-!config/default.properties
 !jobs/default.job
 
 .idea/
