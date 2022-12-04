@@ -1,5 +1,4 @@
 import torch
-import util.categorise as categorise
 import util.calculate as calculate
 import numpy as np
 import globals
@@ -25,12 +24,7 @@ class DogController:
     self.wall_sensor = RadarSensor(self.agent, "wall", self.sensor_range, self.sensor_fov)
     self.network = NeuralNetwork(globals.config.get("dInputNodes", "int"), globals.config.get("dHiddenNodes", "int"), globals.config.get("dOutputNodes", "int"))
     self.genome = None
-    self.max_target_distance = max(
-      calculate.distance_between_points([0, 0], self.target_coords),
-      calculate.distance_between_points([0, self.arena_height], self.target_coords),
-      calculate.distance_between_points([self.arena_width, 0], self.target_coords),
-      calculate.distance_between_points([self.arena_width, self.arena_height], self.target_coords)
-    ) - self.target_radius # distance from furthest arena corner to target zone border
+    self.max_target_distance = calculate.max_distance_from_target_zone(self.target_coords, self.target_radius, self.arena_width, self.arena_height)
 
   def reset(self):
     pass

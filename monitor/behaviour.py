@@ -2,8 +2,6 @@ import globals
 import util.categorise as categorise
 import util.calculate as calculate
 
-# TODO: normalise outputs
-
 class BehaviourMonitor:
 
   def __init__(self, type):
@@ -34,6 +32,9 @@ class PenDistanceBehaviourMonitor:
   def __init__(self):
     self.target_coords = [globals.config.get("pTargetZoneCoordX", "int"), globals.config.get("pTargetZoneCoordY", "int")]
     self.target_radius = globals.config.get("pTargetZoneRadius", "int")
+    self.arena_width = globals.config.get("gArenaWidth", "int")
+    self.arena_height = globals.config.get("gArenaHeight", "int")
+    self.max_target_distance = calculate.max_distance_from_target_zone(self.target_coords, self.target_radius, self.arena_width, self.arena_height)
     self.history = []
 
   def track(self):
@@ -42,7 +43,8 @@ class PenDistanceBehaviourMonitor:
     for dog in dogs:
       total_distance += calculate.distance_from_target_zone(dog.absolute_position, self.target_coords, self.target_radius)
     avg_distance = total_distance / len(dogs)
-    self.history.append(avg_distance)
+    norm_distance = avg_distance / self.max_target_distance
+    self.history.append(norm_distance)
 
   def get_history(self):
     return self.history
@@ -60,6 +62,9 @@ class PenDistanceBehaviourMonitor:
 class DogDistanceBehaviourMonitor:
 
   def __init__(self):
+    self.arena_width = globals.config.get("gArenaWidth", "int")
+    self.arena_height = globals.config.get("gArenaHeight", "int")
+    self.max_distance = calculate.max_distance_between_points(self.arena_width, self.arena_height)
     self.history = []
 
   def track(self):
@@ -74,7 +79,8 @@ class DogDistanceBehaviourMonitor:
             closest_distance = distance
       total_distance += closest_distance
     avg_distance = total_distance / len(dogs)
-    self.history.append(avg_distance)
+    norm_distance = avg_distance / self.max_distance
+    self.history.append(norm_distance)
 
   def get_history(self):
     return self.history
@@ -92,6 +98,9 @@ class DogDistanceBehaviourMonitor:
 class SheepDistanceBehaviourMonitor:
 
   def __init__(self):
+    self.arena_width = globals.config.get("gArenaWidth", "int")
+    self.arena_height = globals.config.get("gArenaHeight", "int")
+    self.max_distance = calculate.max_distance_between_points(self.arena_width, self.arena_height)
     self.history = []
 
   def track(self):
@@ -106,7 +115,8 @@ class SheepDistanceBehaviourMonitor:
           closest_distance = distance
       total_distance += closest_distance
     avg_distance = total_distance / len(dogs)
-    self.history.append(avg_distance)
+    norm_distance = avg_distance / self.max_distance
+    self.history.append(norm_distance)
 
   def get_history(self):
     return self.history
