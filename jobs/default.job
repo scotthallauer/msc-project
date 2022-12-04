@@ -1,10 +1,8 @@
 #!/bin/bash
-#PBS -l select=10:ncpus=24:mpiprocs=24:nodetype=haswell_reg
+#PBS -l select=1:ncpus=24
 #PBS -P CSCI1142
 #PBS -q normal
 #PBS -l walltime=48:00:00
-#PBS -o /mnt/lustre/users/shallauer/msc-project/output/run_test/job.out
-#PBS -e /mnt/lustre/users/shallauer/msc-project/output/run_test/job.err
 #PBS -m abe
 #PBS -M scott.hallauer@gmail.com
 

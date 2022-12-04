@@ -3,6 +3,7 @@ build/
 **/*.code-workspace
 output/**
 jobs/**
+config/trials.properties
 
 !jobs/default.job
 
