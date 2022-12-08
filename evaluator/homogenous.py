@@ -7,7 +7,7 @@ import random
 
 class HomogenousEvaluator(Process):
 
-  def __init__(self, id: int, config_filename: str, run_id: str, start_generation: int, individuals: list, process_output: dict):
+  def __init__(self, id: int, config_filename: str, run_id: str, start_generation: int, individuals: list, process_output: dict, behaviour_monitoring_enabled: bool = False):
     Process.__init__(self)
     self.id = id
     self.config_filename = config_filename
@@ -15,11 +15,12 @@ class HomogenousEvaluator(Process):
     self.start_generation = start_generation
     self.individuals = individuals
     self.process_output = process_output
+    self.behaviour_monitoring_enabled = behaviour_monitoring_enabled
 
   def run(self):
     self.process_output[self.id] = []
     with suppressor():
-      globals.init(self.config_filename, self.run_id, self.start_generation)
+      globals.init(self.config_filename, self.run_id, self.start_generation, self.behaviour_monitoring_enabled)
       for individual in self.individuals:
         self.process_output[self.id] = self.process_output[self.id] + [self.__evaluate(individual)]
       globals.simulator.close()
@@ -28,11 +29,27 @@ class HomogenousEvaluator(Process):
     for dog in categorise.get_dogs():
       dog.controller.set_genome(individual)
     trial_scores = []
+    trial_dog_behaviours = []
+    trial_sheep_behaviours = []
+    trial_pen_behaviours = []
     for _ in range(globals.config.get("pEvaluationTrials", "int")):
       self.__reset()
       globals.simulator.update(globals.config.get("pSimulationLifetime", "int"))
       trial_scores.append(globals.fitness_monitor.score())
-    return (sum(trial_scores) / len(trial_scores)),
+      if self.behaviour_monitoring_enabled:
+        trial_dog_behaviours.append(globals.dog_behaviour_monitor.get_average())
+        trial_sheep_behaviours.append(globals.sheep_behaviour_monitor.get_average())
+        trial_pen_behaviours.append(globals.pen_behaviour_monitor.get_average())
+    fitness = (sum(trial_scores) / len(trial_scores)),
+    if self.behaviour_monitoring_enabled:
+      features = [
+        (sum(trial_dog_behaviours) / len(trial_dog_behaviours)),
+        (sum(trial_sheep_behaviours) / len(trial_sheep_behaviours)),
+        (sum(trial_pen_behaviours) / len(trial_pen_behaviours))
+      ]
+      return (fitness, features)
+    else:
+      return fitness
 
   def __reset(self):
     # reset robot positions

@@ -9,7 +9,6 @@ class BaseController(Controller):
 
   def __init__(self, world_model):
     Controller.__init__(self, world_model) # mandatory call to super constructor
-    self.behaviour_monitoring = globals.config.get("pBehaviourMonitoringEnabled", "bool")
     if categorise.is_dog(self.get_id()):
       self.controller = DogController(self)
     else:
@@ -21,7 +20,7 @@ class BaseController(Controller):
   def step(self):  # step is called at each time step
     if self.get_id() == 1:
       globals.fitness_monitor.track()
-      if self.behaviour_monitoring:
+      if globals.behaviour_monitoring_enabled:
         globals.pen_behaviour_monitor.track()
         globals.dog_behaviour_monitor.track()
         globals.sheep_behaviour_monitor.track()

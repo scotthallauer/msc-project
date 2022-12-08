@@ -11,6 +11,7 @@ import pickle
 import random
 import sys
 import os
+import mapelites
 
 # create fitness and individual objects
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
@@ -118,6 +119,10 @@ if __name__ == "__main__":
     print("View Simulation:\tpython run.py -v <checkpoint file>")
     exit(1)
 
+  # set up MAP-Elites grid
+  if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPELITES":
+    mapelites.init() 
+
   # run all generation simulations
   NB_GENERATIONS = CONFIG.get("pSimulationGenerations", "int")
   for generation in range(START_GENERATION, NB_GENERATIONS + 1):
@@ -128,7 +133,11 @@ if __name__ == "__main__":
     print("Starting...", end="\r", flush=True)
 
     # select the next generation individuals
-    offspring = toolbox.select(population, len(population))
+    if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPELITES" and generation != START_GENERATION:
+      offspring = toolbox.select(mapelites.grid, len(population))
+    else:
+      offspring = toolbox.select(population, len(population))
+
     # clone the selected individuals
     offspring = list(map(toolbox.clone, offspring))
 
@@ -148,13 +157,24 @@ if __name__ == "__main__":
     # evaluate all individuals
     fitnesses = toolbox.evaluate(offspring, CONFIG_FILENAME, RUN_ID, NB_GENERATIONS, START_GENERATION, generation)
     for ind, fit in zip(offspring, fitnesses):
-      ind.fitness.values = fit
+      if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPELITES":
+        ind.fitness.values = fit[0]
+        ind.features = fit[1]
+      else:
+        ind.fitness.values = fit
+
+    # update the MAP-Elites grid
+    if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPELITES":
+      mapelites.grid.update(offspring)
 
     # replace the whole population with the offspring
     population[:] = offspring
 
     # record stats
-    hall_of_fame.update(population)
+    if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPELITES":
+      hall_of_fame.update(mapelites.grid)
+    else:
+      hall_of_fame.update(population)
     record = stats.compile(population)
     logbook.record(gen=generation, **record)
     print(end='\x1b[2K') # clear line
