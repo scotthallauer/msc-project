@@ -1,7 +1,4 @@
-from qdpy.phenotype import *
-from qdpy.containers import *
-from qdpy.benchmarks import *
-from qdpy.plots import *
+from qdpy.containers import Grid
 
 def init():
   global grid

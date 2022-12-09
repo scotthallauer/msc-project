@@ -59,6 +59,8 @@ if __name__ == "__main__":
     # define statistics to track
     stats = tools.Statistics(lambda ind: ind.fitness.values)
     stats.register("avg", np.mean)
+    stats.register("std", np.std)
+    stats.register("min", np.min)
     stats.register("max", np.max)
 
     # start a new evolution simulation
@@ -77,10 +79,10 @@ if __name__ == "__main__":
     # export all statistic results from checkpoint
     elif COMMAND_FLAG == "-e":
       logbook = CHECKPOINT["log"]
-      results = logbook.select("gen", "avg", "max")
-      logger = ResultLogger(RUN_ID, "results", ["generation", "average fitness", "max fitness"])
+      results = logbook.select("gen", "avg", "std", "min", "max")
+      logger = ResultLogger(RUN_ID, "results", ["generation", "avg", "std", "min", "max"])
       for i in range(len(results[0])):
-        logger.append([results[0][i], results[1][i], results[2][i]])
+        logger.append([results[0][i], results[1][i], results[2][i], results[3][i], results[4][i]])
       print("Results exported.")
       exit(0)
 
@@ -133,7 +135,7 @@ if __name__ == "__main__":
     print("Starting...", end="\r", flush=True)
 
     # select the next generation individuals
-    if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPELITES" and generation != START_GENERATION:
+    if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPELITES" and generation != 1:
       offspring = toolbox.select(mapelites.grid, len(population))
     else:
       offspring = toolbox.select(population, len(population))
@@ -163,19 +165,19 @@ if __name__ == "__main__":
       else:
         ind.fitness.values = fit
 
-    # update the MAP-Elites grid
+    # update the MAP-Elites grid or replace population with offspring
     if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPELITES":
       mapelites.grid.update(offspring)
-
-    # replace the whole population with the offspring
-    population[:] = offspring
+    else:
+      population[:] = offspring
 
     # record stats
     if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPELITES":
       hall_of_fame.update(mapelites.grid)
+      record = stats.compile(mapelites.grid)
     else:
       hall_of_fame.update(population)
-    record = stats.compile(population)
+      record = stats.compile(population)
     logbook.record(gen=generation, **record)
     print(end='\x1b[2K') # clear line
     print("Average Fitness: " + str(record["avg"]))
@@ -185,7 +187,7 @@ if __name__ == "__main__":
     if generation % CONFIG.get("pCheckpointInterval", "int") == 0:
       cp = dict(
         rid=RUN_ID,
-        pop=population, 
+        pop=(mapelites.grid if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPELITES" else population), 
         gen=generation, 
         hof=hall_of_fame, 
         log=logbook, 
