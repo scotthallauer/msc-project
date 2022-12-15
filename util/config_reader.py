@@ -17,5 +17,7 @@ class ConfigReader:
       return float(value)
     elif type == "bool":
       return value == "true"
+    elif type == "[str]":
+      return map(lambda s: s.strip(), value[1:-1].split(","))
     else:
       return str(value)
