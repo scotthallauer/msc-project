@@ -64,7 +64,7 @@ class DogDistanceBehaviourMonitor:
   def __init__(self):
     self.arena_width = globals.config.get("gArenaWidth", "int")
     self.arena_height = globals.config.get("gArenaHeight", "int")
-    self.max_distance = calculate.max_distance_between_points(self.arena_width, self.arena_height)
+    self.max_distance = calculate.max_distance_between_points(self.arena_width, self.arena_height) / 2
     self.history = []
 
   def track(self):
@@ -74,7 +74,7 @@ class DogDistanceBehaviourMonitor:
       closest_distance = 99999999999999999
       for dogB in dogs:
         if dogA.id != dogB.id:
-          distance = calculate.distance_between_points(dogA.absolute_position, dogB.absolute_position)
+          distance = min(calculate.distance_between_points(dogA.absolute_position, dogB.absolute_position), self.max_distance)
           if distance < closest_distance:
             closest_distance = distance
       total_distance += closest_distance
@@ -100,7 +100,7 @@ class SheepDistanceBehaviourMonitor:
   def __init__(self):
     self.arena_width = globals.config.get("gArenaWidth", "int")
     self.arena_height = globals.config.get("gArenaHeight", "int")
-    self.max_distance = calculate.max_distance_between_points(self.arena_width, self.arena_height)
+    self.max_distance = calculate.max_distance_between_points(self.arena_width, self.arena_height) / 2
     self.history = []
 
   def track(self):
@@ -110,7 +110,7 @@ class SheepDistanceBehaviourMonitor:
     for dog in dogs:
       closest_distance = 99999999999999999
       for sheep in sheeps:
-        distance = calculate.distance_between_points(dog.absolute_position, sheep.absolute_position)
+        distance = min(calculate.distance_between_points(dog.absolute_position, sheep.absolute_position), self.max_distance)
         if distance < closest_distance:
           closest_distance = distance
       total_distance += closest_distance
