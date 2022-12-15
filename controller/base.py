@@ -20,8 +20,11 @@ class BaseController(Controller):
   def step(self):  # step is called at each time step
     if self.get_id() == 1:
       globals.fitness_monitor.track()
-      if globals.behaviour_monitoring_enabled:
+      behaviour_features = globals.config.get("pBehaviourFeatures", "[str]")
+      if "PEN" in behaviour_features:
         globals.pen_behaviour_monitor.track()
+      if "DOG" in behaviour_features:
         globals.dog_behaviour_monitor.track()
+      if "SHEEP" in behaviour_features:
         globals.sheep_behaviour_monitor.track()
     self.controller.step()
