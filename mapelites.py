@@ -1,5 +1,5 @@
 from qdpy.containers import Grid
-from qdpy.plots import plotGrid, plotGridSubplots
+from qdpy.plots import plotGridSubplots
 import matplotlib.pyplot as plt
 
 def init(_behaviour_features: list, _grid: Grid = None):
@@ -23,7 +23,4 @@ def plot(filename: str):
   global behaviour_features
   nb_features = len(behaviour_features)
   features_domain = [(0., 1.)] * nb_features
-  if nb_features <= 2:
-    plotGrid(grid.quality_array[...,0], filename, plt.get_cmap("nipy_spectral_r"), featuresBounds=features_domain, fitnessBounds=(0., 1.))
-  else:
-    plotGridSubplots(grid.quality_array[...,0], filename, plt.get_cmap("nipy_spectral_r"), featuresBounds=features_domain, fitnessBounds=(0., 1.))
+  plotGridSubplots(grid.quality_array[...,0], filename, plt.get_cmap("nipy_spectral_r"), featuresBounds=features_domain, fitnessBounds=(0., 1.))
