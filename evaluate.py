@@ -13,29 +13,7 @@ def ssga(population: list, config_filename: str, run_id: int, nb_generations: in
   process_output.clear()
   portions = apportion(population, nb_processes)
   for i in range(nb_processes):
-    process = HomogenousEvaluator(i, config_filename, run_id, start_generation, portions[i], process_output, behaviour_monitoring_enabled=False)
-    processes.append(process)
-    process.start()
-  process = ProgressMonitor(nb_processes, len(population), nb_generations, current_generation, process_output)
-  processes.append(process)
-  process.start()
-  for p in processes:
-    p.join()
-  fitnesses = []
-  for i in range(nb_processes):
-    fitnesses.extend(process_output[i])
-  return fitnesses
-
-# MAP-ELITES GENETIC ALGORITHM
-def mapelites(population: list, config_filename: str, run_id: int, nb_generations: int, start_generation: int, current_generation: int):
-  manager = multiprocessing.Manager()
-  nb_processes = multiprocessing.cpu_count()
-  processes = []
-  process_output = manager.dict()
-  process_output.clear()
-  portions = apportion(population, nb_processes)
-  for i in range(nb_processes):
-    process = HomogenousEvaluator(i, config_filename, run_id, start_generation, portions[i], process_output, behaviour_monitoring_enabled=True)
+    process = HomogenousEvaluator(i, config_filename, run_id, start_generation, portions[i], process_output)
     processes.append(process)
     process.start()
   process = ProgressMonitor(nb_processes, len(population), nb_generations, current_generation, process_output)
@@ -67,5 +45,5 @@ def apportion(population: list, nb_processes: int):
 # global list of evaluation algorithms
 evaluators = {
   "SSGA": ssga,
-  "MAPELITES": mapelites
+  "MAPE": ssga
 }

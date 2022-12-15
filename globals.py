@@ -4,7 +4,7 @@ from controller.base import BaseController
 from monitor.swarm import SwarmFitnessMonitor
 from monitor.behaviour import BehaviourMonitor
 
-def init(_config_filename: str, _run_id: str, _start_generation: int, _behaviour_monitoring_enabled: bool = False):
+def init(_config_filename: str, _run_id: str, _start_generation: int):
   global config_filename
   global config
   global run_id
@@ -12,7 +12,6 @@ def init(_config_filename: str, _run_id: str, _start_generation: int, _behaviour
   global current_generation
   global simulator
   global fitness_monitor
-  global behaviour_monitoring_enabled
   global pen_behaviour_monitor
   global dog_behaviour_monitor
   global sheep_behaviour_monitor
@@ -27,7 +26,6 @@ def init(_config_filename: str, _run_id: str, _start_generation: int, _behaviour
     simulator = Pyroborobo.create(config_filename, controller_class=BaseController)
   simulator.start()
   fitness_monitor = SwarmFitnessMonitor(config.get("pSwarmFitnessAlgorithm", "str"))
-  behaviour_monitoring_enabled = _behaviour_monitoring_enabled
   pen_behaviour_monitor = BehaviourMonitor("PEN_DISTANCE")
   dog_behaviour_monitor = BehaviourMonitor("DOG_DISTANCE")
   sheep_behaviour_monitor = BehaviourMonitor("SHEEP_DISTANCE")

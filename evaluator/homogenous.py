@@ -7,7 +7,7 @@ import random
 
 class HomogenousEvaluator(Process):
 
-  def __init__(self, id: int, config_filename: str, run_id: str, start_generation: int, individuals: list, process_output: dict, behaviour_monitoring_enabled: bool = False):
+  def __init__(self, id: int, config_filename: str, run_id: str, start_generation: int, individuals: list, process_output: dict):
     Process.__init__(self)
     self.id = id
     self.config_filename = config_filename
@@ -15,12 +15,11 @@ class HomogenousEvaluator(Process):
     self.start_generation = start_generation
     self.individuals = individuals
     self.process_output = process_output
-    self.behaviour_monitoring_enabled = behaviour_monitoring_enabled
 
   def run(self):
     self.process_output[self.id] = []
     with suppressor():
-      globals.init(self.config_filename, self.run_id, self.start_generation, self.behaviour_monitoring_enabled)
+      globals.init(self.config_filename, self.run_id, self.start_generation)
       for individual in self.individuals:
         self.process_output[self.id] = self.process_output[self.id] + [self.__evaluate(individual)]
       globals.simulator.close()
@@ -29,24 +28,29 @@ class HomogenousEvaluator(Process):
     for dog in categorise.get_dogs():
       dog.controller.set_genome(individual)
     trial_scores = []
+    behaviour_features = globals.config.get("pBehaviourFeatures", "[str]")
+    trial_pen_behaviours = []
     trial_dog_behaviours = []
     trial_sheep_behaviours = []
-    trial_pen_behaviours = []
     for _ in range(globals.config.get("pEvaluationTrials", "int")):
       self.__reset()
       globals.simulator.update(globals.config.get("pSimulationLifetime", "int"))
       trial_scores.append(globals.fitness_monitor.score())
-      if self.behaviour_monitoring_enabled:
-        trial_dog_behaviours.append(globals.dog_behaviour_monitor.get_average())
-        trial_sheep_behaviours.append(globals.sheep_behaviour_monitor.get_average())
+      if "PEN" in behaviour_features:
         trial_pen_behaviours.append(globals.pen_behaviour_monitor.get_average())
+      if "DOG" in behaviour_features:
+        trial_dog_behaviours.append(globals.dog_behaviour_monitor.get_average())
+      if "SHEEP" in behaviour_features:
+        trial_sheep_behaviours.append(globals.sheep_behaviour_monitor.get_average())
     fitness = (sum(trial_scores) / len(trial_scores)),
-    if self.behaviour_monitoring_enabled:
-      features = [
-        (sum(trial_dog_behaviours) / len(trial_dog_behaviours)),
-        (sum(trial_sheep_behaviours) / len(trial_sheep_behaviours)),
-        (sum(trial_pen_behaviours) / len(trial_pen_behaviours))
-      ]
+    if len(behaviour_features) > 0:
+      features = []
+      if "PEN" in behaviour_features:
+        features.append(sum(trial_pen_behaviours) / len(trial_pen_behaviours))
+      if "DOG" in behaviour_features:
+        features.append(sum(trial_dog_behaviours) / len(trial_dog_behaviours))
+      if "SHEEP" in behaviour_features:
+        features.append(sum(trial_sheep_behaviours) / len(trial_sheep_behaviours))
       return (fitness, features)
     else:
       return fitness
