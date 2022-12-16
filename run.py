@@ -90,14 +90,14 @@ if __name__ == "__main__":
       print("Results exported.")
       exit(0)
 
-    elif COMMAND_FLAG == "-g":
+    elif COMMAND_FLAG == "-p":
       if CONFIG.get("pEvolutionAlgorithm", "str") != "MAPE":
-        print("Cannot export grid when evolutionary algorithm is not MAP-Elites.")
+        print("Cannot plot grid when evolutionary algorithm is not MAP-Elites.")
         exit(0)
       grid_filename = "/".join(CHECKPOINT_FILENAME.split("/")[0:-2]) + "/performance_gen_" + str(CHECKPOINT["gen"]) + ".pdf"
       mapelites.init(CONFIG.get("pBehaviourFeatures", "[str]"), CHECKPOINT["pop"])
       mapelites.plot(grid_filename)
-      print("Graph exported.")
+      print("Plot exported.")
       exit(0)
 
     # view simulation of elite individual from a checkpoint
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     print("Start Evolution:\tpython run.py -s <config file> <run id>")
     print("Resume Evolution:\tpython run.py -r <checkpoint file>")
     print("Export Results:\t\tpython run.py -e <checkpoint file>")
-    print("Export MAP-Elites Grid:\t\tpython run.py -g <checkpoint file>")
+    print("Plot MAP-Elites:\t\tpython run.py -p <checkpoint file>")
     print("View Simulation:\tpython run.py -v <checkpoint file>")
     exit(1)
 
