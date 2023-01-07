@@ -132,7 +132,7 @@ if __name__ == "__main__":
     print("Start Evolution:\tpython run.py -s <config file> <run id>")
     print("Resume Evolution:\tpython run.py -r <checkpoint file>")
     print("Export Results:\t\tpython run.py -e <checkpoint file>")
-    print("Plot MAP-Elites:\t\tpython run.py -p <checkpoint file>")
+    print("Plot MAP-Elites:\tpython run.py -p <checkpoint file>")
     print("View Simulation:\tpython run.py -v <checkpoint file>")
     exit(1)
 
