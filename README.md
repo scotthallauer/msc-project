@@ -61,7 +61,17 @@ which python # expected: /apps/chpc/bio/anaconda3-2020.02/envs/roborobo/bin/pyth
 python -c 'import pyroborobo'
 ```
 
-### Step 4: Upload source code
+### Step 4: Install deap and torch
+
+Make sure the roborobo conda environment is activated and then install the 
+necessary Python packages as follows:
+
+```
+pip install deap
+pip install torch
+```
+
+### Step 5: Upload source code
 
 From a new terminal session (i.e. a session that is not logged into the cluster via SSH), upload the source code as follows:
 
