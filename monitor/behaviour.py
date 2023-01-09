@@ -34,7 +34,7 @@ class PenDistanceBehaviourMonitor:
     self.target_radius = globals.config.get("pTargetZoneRadius", "int")
     self.arena_width = globals.config.get("gArenaWidth", "int")
     self.arena_height = globals.config.get("gArenaHeight", "int")
-    self.max_target_distance = calculate.max_distance_from_target_zone(self.target_coords, self.target_radius, self.arena_width, self.arena_height)
+    self.max_target_distance = calculate.max_distance_from_target_zone(self.target_coords, self.target_radius, self.arena_width, self.arena_height) / 1.25 # practical max is 0.4 +/- 0.2 of theoretical max
     self.history = []
 
   def track(self):
@@ -64,7 +64,7 @@ class DogDistanceBehaviourMonitor:
   def __init__(self):
     self.arena_width = globals.config.get("gArenaWidth", "int")
     self.arena_height = globals.config.get("gArenaHeight", "int")
-    self.max_distance = calculate.max_distance_between_points(self.arena_width, self.arena_height) / 2
+    self.max_distance = calculate.max_distance_between_points(self.arena_width, self.arena_height) / 10 # practical max is 0.06 +/- 0.03 of theoretical max
     self.history = []
 
   def track(self):
@@ -100,7 +100,7 @@ class SheepDistanceBehaviourMonitor:
   def __init__(self):
     self.arena_width = globals.config.get("gArenaWidth", "int")
     self.arena_height = globals.config.get("gArenaHeight", "int")
-    self.max_distance = calculate.max_distance_between_points(self.arena_width, self.arena_height) / 2
+    self.max_distance = calculate.max_distance_between_points(self.arena_width, self.arena_height) / 2.5 # practical max is 0.3 +/- 0.05 of theoretical max
     self.history = []
 
   def track(self):
