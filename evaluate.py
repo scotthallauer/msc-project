@@ -1,24 +1,31 @@
 from evaluator.homogenous import HomogenousEvaluator
+from evaluator.heterogenous import HeterogenousEvaluator
 from monitor.progress import ProgressMonitor
 import multiprocessing
+from util.config_reader import ConfigReader
 
 global evaluators 
 
 # STEADY STATE GENETIC ALGORITHM
 def ssga(population: list, config_filename: str, run_id: int, nb_generations: int, start_generation: int, current_generation: int):
   manager = multiprocessing.Manager()
+  config = ConfigReader(config_filename)
   nb_processes = multiprocessing.cpu_count()
   processes = []
   process_output = manager.dict()
   process_output.clear()
   portions = apportion(population, nb_processes)
   for i in range(nb_processes):
-    process = HomogenousEvaluator(i, config_filename, run_id, start_generation, portions[i], process_output)
+    if config.get("pEvolutionAlgorithm", "str") == "MAPEHET":
+      process = HeterogenousEvaluator(i, config_filename, run_id, start_generation, portions[i], process_output)
+    else:
+      process = HomogenousEvaluator(i, config_filename, run_id, start_generation, portions[i], process_output)
     processes.append(process)
     process.start()
-  process = ProgressMonitor(nb_processes, len(population), nb_generations, current_generation, process_output)
-  processes.append(process)
-  process.start()
+  if config.get("pDynamicProgressOutput", "bool"):
+    process = ProgressMonitor(nb_processes, len(population), nb_generations, current_generation, process_output)
+    processes.append(process)
+    process.start()
   for p in processes:
     p.join()
   fitnesses = []
@@ -45,5 +52,6 @@ def apportion(population: list, nb_processes: int):
 # global list of evaluation algorithms
 evaluators = {
   "SSGA": ssga,
-  "MAPE": ssga
+  "MAPEHOM": ssga,
+  "MAPEHET": ssga
 }

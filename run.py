@@ -2,6 +2,7 @@ from deap import base, creator, tools
 from util.config_reader import ConfigReader
 from util.result_logger import ResultLogger
 from evaluator.homogenous import HomogenousEvaluator
+from evaluator.heterogenous import HeterogenousEvaluator
 import util.convert as convert
 import numpy as np
 import time
@@ -45,6 +46,8 @@ if __name__ == "__main__":
     NB_HIDDENS = CONFIG.get("dHiddenNodes", "int")
     NB_OUTPUTS = CONFIG.get("dOutputNodes", "int")
     GENOME_SIZE = (NB_INPUTS * NB_HIDDENS) + (NB_HIDDENS * NB_OUTPUTS)
+    if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPEHET":
+      GENOME_SIZE = GENOME_SIZE * CONFIG.get("pNumberOfDogs", "int")
 
     # define genetic operators to use
     toolbox = base.Toolbox()
@@ -68,7 +71,7 @@ if __name__ == "__main__":
       population        = toolbox.population(n=CONFIG.get("pPopulationSize", "int"))
       hall_of_fame      = tools.HallOfFame(maxsize=1)
       logbook           = tools.Logbook()
-      if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPE":
+      if CONFIG.get("pEvolutionAlgorithm", "str").startswith("MAPE"):
         mapelites.init(CONFIG.get("pBehaviourFeatures", "[str]")) 
 
     # resume a previous evolution simulation
@@ -77,7 +80,7 @@ if __name__ == "__main__":
       hall_of_fame      = CHECKPOINT["hof"]
       logbook           = CHECKPOINT["log"]
       random.setstate(CHECKPOINT["rnd"])
-      if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPE":
+      if CONFIG.get("pEvolutionAlgorithm", "str").startswith("MAPE"):
         mapelites.init(CONFIG.get("pBehaviourFeatures", "[str]"), population)
 
     # export all statistic results from checkpoint
@@ -91,7 +94,7 @@ if __name__ == "__main__":
       exit(0)
 
     elif COMMAND_FLAG == "-p":
-      if CONFIG.get("pEvolutionAlgorithm", "str") != "MAPE":
+      if not CONFIG.get("pEvolutionAlgorithm", "str").startswith("MAPE"):
         print("Cannot plot grid when evolutionary algorithm is not MAP-Elites.")
         exit(0)
       grid_filename = "/".join(CHECKPOINT_FILENAME.split("/")[0:-2]) + "/performance_gen_" + str(CHECKPOINT["gen"]) + ".pdf"
@@ -114,7 +117,10 @@ if __name__ == "__main__":
       elite = CHECKPOINT["hof"].items[0]
       manager = multiprocessing.Manager()
       process_output = manager.dict()
-      process = HomogenousEvaluator(0, TEMP_FILENAME, CHECKPOINT["rid"], 1, [elite], process_output)
+      if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPEHET":
+        process = HeterogenousEvaluator(0, TEMP_FILENAME, CHECKPOINT["rid"], 1, [elite], process_output)
+      else:
+        process = HomogenousEvaluator(0, TEMP_FILENAME, CHECKPOINT["rid"], 1, [elite], process_output)
       process.start()
       process.join()
       print(end='\x1b[2K') # clear line
@@ -143,10 +149,11 @@ if __name__ == "__main__":
     # start generation
     generation_start = time.time()
     print("*" * 10, generation, "*" * 10)
-    print("Starting...", end="\r", flush=True)
+    if CONFIG.get("pDynamicProgressOutput", "bool"):
+      print("Starting...", end="\r", flush=True)
 
     # select the next generation individuals
-    if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPE" and generation != 1:
+    if CONFIG.get("pEvolutionAlgorithm", "str").startswith("MAPE") and generation != 1:
       offspring = toolbox.select(mapelites.grid, CONFIG.get("pPopulationSize", "int"))
     else:
       offspring = toolbox.select(population, CONFIG.get("pPopulationSize", "int"))
@@ -170,27 +177,28 @@ if __name__ == "__main__":
     # evaluate all individuals
     fitnesses = toolbox.evaluate(offspring, CONFIG_FILENAME, RUN_ID, NB_GENERATIONS, START_GENERATION, generation)
     for ind, fit in zip(offspring, fitnesses):
-      if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPE":
+      if CONFIG.get("pEvolutionAlgorithm", "str").startswith("MAPE"):
         ind.fitness.values = fit[0]
         ind.features = fit[1]
       else:
         ind.fitness.values = fit
 
     # update the MAP-Elites grid or replace population with offspring
-    if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPE":
+    if CONFIG.get("pEvolutionAlgorithm", "str").startswith("MAPE"):
       mapelites.grid.update(offspring)
     else:
       population[:] = offspring
 
     # record stats
-    if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPE":
+    if CONFIG.get("pEvolutionAlgorithm", "str").startswith("MAPE"):
       hall_of_fame.update(mapelites.grid)
       record = stats.compile(mapelites.grid)
     else:
       hall_of_fame.update(population)
       record = stats.compile(population)
     logbook.record(gen=generation, **record)
-    print(end='\x1b[2K') # clear line
+    if CONFIG.get("pDynamicProgressOutput", "bool"):
+      print(end='\x1b[2K') # clear line
     print("Average Fitness: " + str(record["avg"]))
     print("Maximum Fitness: " + str(record["max"]))
 
@@ -198,7 +206,7 @@ if __name__ == "__main__":
     if generation % CONFIG.get("pCheckpointInterval", "int") == 0:
       cp = dict(
         rid=RUN_ID,
-        pop=(mapelites.grid if CONFIG.get("pEvolutionAlgorithm", "str") == "MAPE" else population), 
+        pop=(mapelites.grid if CONFIG.get("pEvolutionAlgorithm", "str").startswith("MAPE") else population), 
         gen=generation, 
         hof=hall_of_fame, 
         log=logbook, 
