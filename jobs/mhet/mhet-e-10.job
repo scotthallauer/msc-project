@@ -3,8 +3,8 @@
 #PBS -P CSCI1142
 #PBS -q smp
 #PBS -l walltime=96:00:00
-#PBS -o /mnt/lustre/users/shallauer/jobs/default.out
-#PBS -e /mnt/lustre/users/shallauer/jobs/default.err
+#PBS -o /mnt/lustre/users/shallauer/jobs/mhet-e-10.out
+#PBS -e /mnt/lustre/users/shallauer/jobs/mhet-e-10.err
 #PBS -m abe
 #PBS -M scott.hallauer@gmail.com
 
@@ -23,6 +23,6 @@ nproc=`cat $PBS_NODEFILE | wc -l`
 echo nproc is $nproc
 cat $PBS_NODEFILE
 
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/default.properties default
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/mhet/mhet-easy.properties mhet-e-10
 
 conda deactivate

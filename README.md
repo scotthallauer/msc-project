@@ -61,14 +61,16 @@ which python # expected: /apps/chpc/bio/anaconda3-2020.02/envs/roborobo/bin/pyth
 python -c 'import pyroborobo'
 ```
 
-### Step 4: Install deap and torch
+### Step 4: Install Python packages
 
 Make sure the roborobo conda environment is activated and then install the 
 necessary Python packages as follows:
 
 ```
 pip install deap
+pip install qdpy
 pip install torch
+pip install scikit-learn
 ```
 
 ### Step 5: Upload source code
