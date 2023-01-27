@@ -1,0 +1,37 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=24
+#PBS -P CSCI1142
+#PBS -q smp
+#PBS -l walltime=96:00:00
+#PBS -o /mnt/lustre/users/shallauer/jobs/shet-d-01.out
+#PBS -e /mnt/lustre/users/shallauer/jobs/shet-d-01.err
+#PBS -m abe
+#PBS -M scott.hallauer@gmail.com
+
+ulimit -s unlimited
+
+module purge
+module load chpc/BIOMODULES anaconda/3
+module load chpc/BIOMODULES roborobo4
+
+eval "$(conda shell.bash hook)"
+
+conda activate roborobo
+
+cd /mnt/lustre/users/shallauer/msc-project
+nproc=`cat $PBS_NODEFILE | wc -l`
+echo nproc is $nproc
+cat $PBS_NODEFILE
+
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/shet/shet-difficult.properties shet-d-01
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/shet/shet-difficult.properties shet-d-02
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/shet/shet-difficult.properties shet-d-03
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/shet/shet-difficult.properties shet-d-04
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/shet/shet-difficult.properties shet-d-05
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/shet/shet-difficult.properties shet-d-06
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/shet/shet-difficult.properties shet-d-07
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/shet/shet-difficult.properties shet-d-08
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/shet/shet-difficult.properties shet-d-09
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/shet/shet-difficult.properties shet-d-10
+
+conda deactivate
