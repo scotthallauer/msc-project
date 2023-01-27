@@ -1,7 +1,7 @@
 import math
 import util.categorise as categorise
 import util.calculate as calculate
-import globals
+import util.globals as globals
 
 class SwarmFitnessMonitor:
 

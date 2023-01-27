@@ -1,5 +1,5 @@
 from pyroborobo import Controller
-import globals
+import util.globals as globals
 from controller.dog import DogController
 from controller.sheep import SheepController
 import util.categorise as categorise

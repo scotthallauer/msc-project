@@ -1,6 +1,6 @@
 import util.calculate as calculate
 import util.categorise as categorise
-import globals
+import util.globals as globals
 
 class IndividualFitnessMonitor:
 

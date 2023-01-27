@@ -1,5 +1,5 @@
 from pyroborobo import Pyroborobo
-import globals
+import util.globals as globals
 import math
 import util.categorise as categorise
 import util.calculate as calculate

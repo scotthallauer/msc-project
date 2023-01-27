@@ -1,5 +1,4 @@
 import os
-import globals
 
 class ResultLogger:
 

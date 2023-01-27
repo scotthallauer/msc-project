@@ -1,5 +1,5 @@
 import util.calculate as calculate
-import globals
+import util.globals as globals
 
 def is_dog(id):
   return id >= 0 and id < globals.config.get("pNumberOfDogs", "int")

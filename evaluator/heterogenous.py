@@ -2,7 +2,7 @@ from multiprocessing import Process
 from util.suppress import suppressor
 import util.calculate as calculate
 import util.categorise as categorise
-import globals
+import util.globals as globals
 import random
 
 class HeterogenousEvaluator(Process):

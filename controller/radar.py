@@ -3,8 +3,7 @@
 # (1) distance (in the range [0, 1], where 0 = no object detected, and 1 = object detected as close as possible)
 # (2) angle (in the range (-1, 1], where negative represents left and positive represents right)
 
-from pyroborobo import Pyroborobo
-import globals
+import util.globals as globals
 import util.categorise as categorise
 import numpy as np
 

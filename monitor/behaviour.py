@@ -1,4 +1,4 @@
-import globals
+import util.globals as globals
 import util.categorise as categorise
 import util.calculate as calculate
 

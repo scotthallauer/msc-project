@@ -1,7 +1,7 @@
 import torch
 import util.calculate as calculate
 import numpy as np
-import globals
+import util.globals as globals
 from controller.radar import RadarSensor
 from torch import nn
 
