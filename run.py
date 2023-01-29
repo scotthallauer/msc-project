@@ -1,12 +1,10 @@
 from deap import base, creator, tools
 from util.config_reader import ConfigReader
 from util.result_logger import ResultLogger
-from evaluator.homogenous import HomogenousEvaluator
-from evaluator.heterogenous import HeterogenousEvaluator
 import util.convert as convert
+import util.evaluator as evaluator
 import numpy as np
 import time
-import evaluator.base as evaluate
 import multiprocessing
 import pickle
 import random
@@ -62,7 +60,7 @@ if __name__ == "__main__":
       toolbox.register("mate", tools.cxTwoPoint)
       toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.05)
       toolbox.register("select", tools.selTournament, tournsize=3)
-      toolbox.register("evaluate", evaluate.evaluator)
+      toolbox.register("evaluate", evaluator.execute)
 
       # define statistics to track
       stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
@@ -144,10 +142,8 @@ if __name__ == "__main__":
       elite = CHECKPOINT["hof"].items[0]
       manager = multiprocessing.Manager()
       process_output = manager.dict()
-      if CONFIG.get("pEvolutionAlgorithm", "str").endswith("HET"):
-        process = HeterogenousEvaluator(0, TEMP_FILENAME, CHECKPOINT["rid"], 1, [elite], process_output)
-      else:
-        process = HomogenousEvaluator(0, TEMP_FILENAME, CHECKPOINT["rid"], 1, [elite], process_output)
+      is_homogenous = CONFIG.get("pEvolutionAlgorithm", "str").endswith("HOM")
+      process = evaluator.IndividualEvaluator(0, TEMP_FILENAME, CHECKPOINT["rid"], 1, [elite], process_output, is_homogenous)
       process.start()
       process.join()
       print(end='\x1b[2K') # clear line

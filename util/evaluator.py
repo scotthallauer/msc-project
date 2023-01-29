@@ -1,20 +1,63 @@
-from multiprocessing import Process
+import multiprocessing
 from util.suppress import suppressor
 import util.calculate as calculate
 import util.categorise as categorise
 import util.globals as globals
+from util.config_reader import ConfigReader
+from monitor.progress import ProgressMonitor
 import random
 
-class HomogenousEvaluator(Process):
+def execute(population: list, config_filename: str, run_id: int, nb_generations: int, start_generation: int, current_generation: int):
+  manager = multiprocessing.Manager()
+  config = ConfigReader(config_filename)
+  nb_processes = multiprocessing.cpu_count()
+  processes = []
+  process_output = manager.dict()
+  process_output.clear()
+  portions = apportion(population, nb_processes)
+  for i in range(nb_processes):
+    is_homogenous = config.get("pEvolutionAlgorithm", "str").endswith("HOM")
+    process = IndividualEvaluator(i, config_filename, run_id, start_generation, portions[i], process_output, is_homogenous)
+    processes.append(process)
+    process.start()
+  if config.get("pDynamicProgressOutput", "bool"):
+    process = ProgressMonitor(nb_processes, len(population), nb_generations, current_generation, process_output)
+    processes.append(process)
+    process.start()
+  for p in processes:
+    p.join()
+  fitnesses = []
+  for i in range(nb_processes):
+    fitnesses.extend(process_output[i])
+  return fitnesses
 
-  def __init__(self, id: int, config_filename: str, run_id: str, start_generation: int, individuals: list, process_output: dict):
-    Process.__init__(self)
+# helper function to distribute individual evaluation to different processes
+def apportion(population: list, nb_processes: int):
+  allocation = len(population) // nb_processes
+  overflow = len(population) % nb_processes
+  portions = []
+  total = 0
+  for i in range(nb_processes):
+    portion = population[total : total + allocation]
+    total += allocation
+    if i < overflow:
+      portion.append(population[total])
+      total += 1
+    portions.append(portion)
+  return portions
+
+
+class IndividualEvaluator(multiprocessing.Process):
+
+  def __init__(self, id: int, config_filename: str, run_id: str, start_generation: int, individuals: list, process_output: dict, is_homogenous: bool):
+    multiprocessing.Process.__init__(self)
     self.id = id
     self.config_filename = config_filename
     self.run_id = run_id
     self.start_generation = start_generation
     self.individuals = individuals
     self.process_output = process_output
+    self.is_homogenous = is_homogenous
 
   def run(self):
     self.process_output[self.id] = []
@@ -25,8 +68,13 @@ class HomogenousEvaluator(Process):
       globals.simulator.close()
 
   def __evaluate(self, individual):
-    for dog in categorise.get_dogs():
-      dog.controller.set_genome(individual)
+    if self.is_homogenous:
+      for dog in categorise.get_dogs():
+        dog.controller.set_genome(individual)
+    else:
+      genomes = self.__individual_to_genomes(individual, globals.config.get("pNumberOfDogs", "int"))
+      for dog in categorise.get_dogs():
+        dog.controller.set_genome(genomes.pop())
     trial_scores = []
     behaviour_features = globals.config.get("pBehaviourFeatures", "[str]")
     trial_pen_behaviours = []
@@ -54,6 +102,13 @@ class HomogenousEvaluator(Process):
       return (fitness, features)
     else:
       return fitness
+  
+  def __individual_to_genomes(self, individual: list, nb_genomes: int):
+    genome_size = int(len(individual) / nb_genomes)
+    genomes = []
+    for i in range(0, len(individual), genome_size):
+      genomes.append(individual[i : i + genome_size])
+    return genomes
 
   def __reset(self):
     # reset robot positions
