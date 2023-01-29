@@ -65,35 +65,21 @@ if __name__ == "__main__":
       toolbox.register("evaluate", evaluate.evaluator)
 
       # define statistics to track
-      fitness_stats = tools.Statistics(lambda ind: ind.fitness.values)
-      fitness_stats.register("avg", np.mean)
-      fitness_stats.register("std", np.std)
-      fitness_stats.register("min", np.min)
-      fitness_stats.register("max", np.max)
-      pen_bc_stats = tools.Statistics(lambda ind: ind.features[0])
-      pen_bc_stats.register("avg", np.mean)
-      pen_bc_stats.register("std", np.std)
-      pen_bc_stats.register("min", np.min)
-      pen_bc_stats.register("max", np.max)
-      dog_bc_stats = tools.Statistics(lambda ind: ind.features[1])
-      dog_bc_stats.register("avg", np.mean)
-      dog_bc_stats.register("std", np.std)
-      dog_bc_stats.register("min", np.min)
-      dog_bc_stats.register("max", np.max)
-      sheep_bc_stats = tools.Statistics(lambda ind: ind.features[2])
-      sheep_bc_stats.register("avg", np.mean)
-      sheep_bc_stats.register("std", np.std)
-      sheep_bc_stats.register("min", np.min)
-      sheep_bc_stats.register("max", np.max)
+      stats_fit = tools.Statistics(lambda ind: ind.fitness.values)
+      stats_pen = tools.Statistics(lambda ind: ind.features[0])
+      stats_dog = tools.Statistics(lambda ind: ind.features[1])
+      stats_shp = tools.Statistics(lambda ind: ind.features[2])
+      mstats = tools.MultiStatistics(fitness=stats_fit, pen=stats_pen, dog=stats_dog, sheep=stats_shp)
+      mstats.register("avg", np.mean)
+      mstats.register("std", np.std)
+      mstats.register("min", np.min)
+      mstats.register("max", np.max)
 
     # start a new evolution simulation
     if COMMAND_FLAG == "-s":
       population         = toolbox.population(n=CONFIG.get("pPopulationSize", "int"))
       hall_of_fame       = tools.HallOfFame(maxsize=1)
-      fitness_logbook    = tools.Logbook()
-      pen_bc_logbook     = tools.Logbook()
-      dog_bc_logbook     = tools.Logbook()
-      sheep_bc_logbook   = tools.Logbook()
+      logbook            = tools.Logbook()
       if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M"):
         mapelites.init(CONFIG.get("pBehaviourFeatures", "[str]")) 
 
@@ -101,36 +87,34 @@ if __name__ == "__main__":
     elif COMMAND_FLAG == "-r":
       population         = CHECKPOINT["pop"]
       hall_of_fame       = CHECKPOINT["hof"]
-      fitness_logbook    = CHECKPOINT["lgf"]
-      pen_bc_logbook     = CHECKPOINT["lgp"]
-      dog_bc_logbook     = CHECKPOINT["lgd"]
-      sheep_bc_logbook   = CHECKPOINT["lgs"]
+      logbook            = CHECKPOINT["log"]
       random.setstate(CHECKPOINT["rnd"])
       if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M"):
         mapelites.init(CONFIG.get("pBehaviourFeatures", "[str]"), population)
 
     # export all statistic results from checkpoint
     elif COMMAND_FLAG == "-e":
-      fitness_logbook = CHECKPOINT["lgf"]
-      fitness_results = fitness_logbook.select("gen", "avg", "std", "min", "max")
-      fitness_logger = ResultLogger(RUN_ID, "results_fitness", ["gen", "avg", "std", "min", "max"])
-      for i in range(len(fitness_results[0])):
-        fitness_logger.append([fitness_results[0][i], fitness_results[1][i], fitness_results[2][i], fitness_results[3][i], fitness_results[4][i]])
-      pen_bc_logbook = CHECKPOINT["lgp"]
-      pen_bc_results = pen_bc_logbook.select("gen", "avg", "std", "min", "max")
-      pen_bc_logger = ResultLogger(RUN_ID, "results_pen-bc", ["gen", "avg", "std", "min", "max"])
-      for i in range(len(pen_bc_results[0])):
-        pen_bc_logger.append([pen_bc_results[0][i], pen_bc_results[1][i], pen_bc_results[2][i], pen_bc_results[3][i], pen_bc_results[4][i]])
-      dog_bc_logbook = CHECKPOINT["lgd"]
-      dog_bc_results = dog_bc_logbook.select("gen", "avg", "std", "min", "max")
-      dog_bc_logger = ResultLogger(RUN_ID, "results_dog-bc", ["gen", "avg", "std", "min", "max"])
-      for i in range(len(dog_bc_results[0])):
-        dog_bc_logger.append([dog_bc_results[0][i], dog_bc_results[1][i], dog_bc_results[2][i], dog_bc_results[3][i], dog_bc_results[4][i]])
-      sheep_bc_logbook = CHECKPOINT["lgs"]
-      sheep_bc_results = sheep_bc_logbook.select("gen", "avg", "std", "min", "max")
-      sheep_bc_logger = ResultLogger(RUN_ID, "results_sheep-bc", ["gen", "avg", "std", "min", "max"])
-      for i in range(len(sheep_bc_results[0])):
-        sheep_bc_logger.append([sheep_bc_results[0][i], sheep_bc_results[1][i], sheep_bc_results[2][i], sheep_bc_results[3][i], sheep_bc_results[4][i]])
+      logbook = CHECKPOINT["log"]
+      results_gen = logbook.select("gen")
+      results_fit = logbook.chapters["fitness"].select("avg", "std", "min", "max")
+      results_pen = logbook.chapters["pen"].select("avg", "std", "min", "max")
+      results_dog = logbook.chapters["dog"].select("avg", "std", "min", "max")
+      results_shp = logbook.chapters["sheep"].select("avg", "std", "min", "max")
+      logger = ResultLogger(RUN_ID, "results", [
+        "gen", 
+        "fit-avg", "fit-std", "fit-min", "fit-max", 
+        "pen-avg", "pen-std", "pen-min", "pen-max", 
+        "dog-avg", "dog-std", "dog-min", "dog-max", 
+        "shp-avg", "shp-std", "shp-min", "shp-max"
+      ])
+      for i in range(len(results_gen)):
+        logger.append([
+          results_gen[i], 
+          results_fit[0][i], results_fit[1][i], results_fit[2][i], results_fit[3][i],
+          results_pen[0][i], results_pen[1][i], results_pen[2][i], results_pen[3][i],
+          results_dog[0][i], results_dog[1][i], results_dog[2][i], results_dog[3][i],
+          results_shp[0][i], results_shp[1][i], results_shp[2][i], results_shp[3][i],
+        ])
       print("Results exported.")
       exit(0)
 
@@ -167,7 +151,7 @@ if __name__ == "__main__":
       process.start()
       process.join()
       print(end='\x1b[2K') # clear line
-      print("Fitness = " + str(process_output[0][0][0]))
+      print("Fitness: " + str(process_output[0][0][0]))
       os.remove(TEMP_FILENAME)
       exit(0)
 
@@ -232,30 +216,21 @@ if __name__ == "__main__":
     # record stats
     if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M"):
       hall_of_fame.update(mapelites.grid)
-      fitness_record = fitness_stats.compile(mapelites.grid)
-      pen_bc_record = pen_bc_stats.compile(mapelites.grid)
-      dog_bc_record = dog_bc_stats.compile(mapelites.grid)
-      sheep_bc_record = sheep_bc_stats.compile(mapelites.grid)
+      record = mstats.compile(mapelites.grid)
     else:
       hall_of_fame.update(population)
-      fitness_record = fitness_stats.compile(population)
-      pen_bc_record = pen_bc_stats.compile(population)
-      dog_bc_record = dog_bc_stats.compile(population)
-      sheep_bc_record = sheep_bc_stats.compile(population)
-    fitness_logbook.record(gen=generation, **fitness_record)
-    pen_bc_logbook.record(gen=generation, **pen_bc_record)
-    dog_bc_logbook.record(gen=generation, **dog_bc_record)
-    sheep_bc_logbook.record(gen=generation, **sheep_bc_record)
+      record = mstats.compile(population)
+    logbook.record(gen=generation, **record)
     if CONFIG.get("pDynamicProgressOutput", "bool"):
       print(end='\x1b[2K') # clear line
-    print("Average Fitness: " + str(fitness_record["avg"]))
-    print("Maximum Fitness: " + str(fitness_record["max"]))
-    print("Average Pen Distance: " + str(pen_bc_record["avg"]))
-    print("Maximum Pen Distance: " + str(pen_bc_record["max"]))
-    print("Average Dog Distance: " + str(dog_bc_record["avg"]))
-    print("Maximum Dog Distance: " + str(dog_bc_record["max"]))
-    print("Average Sheep Distance: " + str(sheep_bc_record["avg"]))
-    print("Maximum Sheep Distance: " + str(sheep_bc_record["max"]))
+    print("Average Fitness: " + str(record["fitness"]["avg"]))
+    print("Maximum Fitness: " + str(record["fitness"]["max"]))
+    print("Average Pen Distance: " + str(record["pen"]["avg"]))
+    print("Maximum Pen Distance: " + str(record["pen"]["max"]))
+    print("Average Dog Distance: " + str(record["dog"]["avg"]))
+    print("Maximum Dog Distance: " + str(record["dog"]["max"]))
+    print("Average Sheep Distance: " + str(record["sheep"]["avg"]))
+    print("Maximum Sheep Distance: " + str(record["sheep"]["max"]))
 
     # save checkpoint
     if generation % CONFIG.get("pCheckpointInterval", "int") == 0:
@@ -264,10 +239,7 @@ if __name__ == "__main__":
         pop=(mapelites.grid if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M") else population), 
         gen=generation, 
         hof=hall_of_fame, 
-        lgf=fitness_logbook, 
-        lgp=pen_bc_logbook,
-        lgd=dog_bc_logbook,
-        lgs=sheep_bc_logbook,
+        log=logbook,
         rnd=random.getstate(), 
         cfg=CONFIG_FILENAME
       )

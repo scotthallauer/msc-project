@@ -71,6 +71,7 @@ pip install deap
 pip install qdpy
 pip install torch
 pip install scikit-learn
+pip install seaborn
 ```
 
 ### Step 5: Upload source code
