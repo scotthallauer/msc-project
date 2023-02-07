@@ -122,8 +122,7 @@ if __name__ == "__main__":
         AGGREGATE_PREFIX = sys.argv[3]
         plta.graph(AGGREGATE_PREFIX)
       elif GRAPH_TYPE == "fitness":
-        AGGREGATE_PREFIX = sys.argv[3]
-        pltf.graph(AGGREGATE_PREFIX)
+        pltf.graph()
       elif GRAPH_TYPE == "solutions":
         plts.graph()
       exit(0)

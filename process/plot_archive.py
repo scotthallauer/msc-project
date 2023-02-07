@@ -1,6 +1,7 @@
 import pickle
 import math
 import util.mapelites as mapelites
+import process.project_archive as prja
 import os
 import numpy as np
 import seaborn as sns
@@ -29,13 +30,17 @@ def graph(prefix):
     CHECKPOINT_FILENAME = folder + "/checkpoints/gen_100.pkl"
     if os.path.exists(CHECKPOINT_FILENAME):
       count += 1
-      with open(CHECKPOINT_FILENAME, "rb") as cp_file:
-        CHECKPOINT = pickle.load(cp_file)
-      POPULATION = CHECKPOINT["pop"]
-      CONFIG_FILENAME = CHECKPOINT["cfg"]
-      CONFIG = ConfigReader(CONFIG_FILENAME)
-      mapelites.init(CONFIG.get("pBehaviourFeatures", "[str]"), POPULATION)
-      fitness_grid = mapelites.grid.quality_array
+      if "shom" in folder or "shet" in folder:
+        grid = prja.project(CHECKPOINT_FILENAME)
+        fitness_grid = grid.quality_array
+      else: 
+        with open(CHECKPOINT_FILENAME, "rb") as cp_file:
+          CHECKPOINT = pickle.load(cp_file)
+        POPULATION = CHECKPOINT["pop"]
+        CONFIG_FILENAME = CHECKPOINT["cfg"]
+        CONFIG = ConfigReader(CONFIG_FILENAME)
+        mapelites.init(CONFIG.get("pBehaviourFeatures", "[str]"), POPULATION)
+        fitness_grid = mapelites.grid.quality_array
       flag = AGGREGATE_ARCHIVE is None
       if flag:
         AGGREGATE_ARCHIVE = []
