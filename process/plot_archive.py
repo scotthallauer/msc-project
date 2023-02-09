@@ -16,11 +16,15 @@ def max_flatten(grid, axis):
     output.append([c[0] for c in plane[r].tolist()])
   return output
 
-def graph(prefix):
+def graph(prefix, runs=20):
 
+  MAX_RUNS = runs
   AGGREGATE_PREFIX = prefix
 
   folders = [("output/" + folder) for folder in os.listdir("output") if folder.startswith("run_" + AGGREGATE_PREFIX)]
+
+  if len(folders) > MAX_RUNS:
+    folders = folders[:MAX_RUNS]
 
   AGGREGATE_ARCHIVE = None
 

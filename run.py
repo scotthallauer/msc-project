@@ -14,6 +14,8 @@ import util.mapelites as mapelites
 import process.plot_solutions as plts
 import process.plot_fitness as pltf
 import process.plot_archive as plta
+import process.plot_qdscore as pltq
+import process.calc_ttest as clct
 
 # create fitness and individual objects
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
@@ -122,9 +124,18 @@ if __name__ == "__main__":
         AGGREGATE_PREFIX = sys.argv[3]
         plta.graph(AGGREGATE_PREFIX)
       elif GRAPH_TYPE == "fitness":
-        pltf.graph()
+        VARIANT_CODE = sys.argv[3]
+        pltf.graph(VARIANT_CODE)
       elif GRAPH_TYPE == "solutions":
-        plts.graph()
+        VARIANT_CODE = sys.argv[3]
+        plts.graph(VARIANT_CODE)
+      elif GRAPH_TYPE == "qdscore":
+        VARIANT_CODE = sys.argv[3]
+        pltq.graph(VARIANT_CODE)
+      elif GRAPH_TYPE == "ttest":
+        VARIANT_CODE = sys.argv[3]
+        STATISTIC_CODE = sys.argv[4]
+        clct.calculate(VARIANT_CODE, STATISTIC_CODE)
       exit(0)
 
     # view simulation of elite individual from a checkpoint
@@ -160,7 +171,7 @@ if __name__ == "__main__":
     print("Start Evolution:\tpython run.py -s <config file> <run id>")
     print("Resume Evolution:\tpython run.py -r <checkpoint file>")
     print("Export Results:\t\tpython run.py -e <checkpoint file>")
-    print("Plot Figures:\t\tpython run.py -p <graph type> [aggregate prefix]")
+    print("Plot Figures:\t\tpython run.py -p <graph type> [variant options]")
     print("View Simulation:\tpython run.py -v <checkpoint file>")
     exit(1)
 

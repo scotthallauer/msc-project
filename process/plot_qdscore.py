@@ -53,13 +53,13 @@ def graph(variant, runs=20):
             CONFIG = ConfigReader(CONFIG_FILENAME)
             mapelites.init(CONFIG.get("pBehaviourFeatures", "[str]"), POPULATION)
             fitness_grid = mapelites.grid.quality_array
-          solution_count = 0
+          qd_score = 0
           for x in range(len(fitness_grid)):
             for y in range(len(fitness_grid[x])):
               for z in range(len(fitness_grid[x][y])):
                 if not math.isnan(fitness_grid[x][y][z]):
-                  solution_count += 1
-          AGGREGATE_ARRAY[i-1].append(solution_count)
+                  qd_score += fitness_grid[x][y][z][0]
+          AGGREGATE_ARRAY[i-1].append(qd_score)
         folder_count += 1
       else:
         print("Skipping run: " + CHECKPOINT_FILENAME + " is missing.")
@@ -84,6 +84,6 @@ def graph(variant, runs=20):
   plt.suptitle(title, weight="bold")
   plt.title("SSGA vs. MAP-Elites", fontsize=10)
   plt.xlabel("Generation")
-  plt.ylabel("Average archive size")
+  plt.ylabel("Average QD score")
   plt.legend(loc="upper left")
-  plt.savefig("output/solutions-" + variant + ".png", bbox_inches='tight', pad_inches=0.2)
+  plt.savefig("output/qdscore-" + variant + ".png", bbox_inches='tight', pad_inches=0.2)
