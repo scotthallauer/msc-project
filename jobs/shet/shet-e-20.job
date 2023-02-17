@@ -1,0 +1,37 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=24
+#PBS -P CSCI1142
+#PBS -q smp
+#PBS -l walltime=96:00:00
+#PBS -o /mnt/lustre/users/shallauer/jobs/shet-e-20.out
+#PBS -e /mnt/lustre/users/shallauer/jobs/shet-e-20.err
+#PBS -m abe
+#PBS -M scott.hallauer@gmail.com
+
+ulimit -s unlimited
+
+module purge
+module load chpc/BIOMODULES anaconda/3
+module load chpc/BIOMODULES roborobo4
+
+eval "$(conda shell.bash hook)"
+
+conda activate roborobo
+
+cd /mnt/lustre/users/shallauer/msc-project
+nproc=`cat $PBS_NODEFILE | wc -l`
+echo nproc is $nproc
+cat $PBS_NODEFILE
+
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -r output/run_shet-e-11/checkpoints/gen_100.pkl
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -r output/run_shet-e-12/checkpoints/gen_100.pkl
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -r output/run_shet-e-13/checkpoints/gen_100.pkl
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -r output/run_shet-e-14/checkpoints/gen_100.pkl
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -r output/run_shet-e-15/checkpoints/gen_100.pkl
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -r output/run_shet-e-16/checkpoints/gen_100.pkl
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -r output/run_shet-e-17/checkpoints/gen_100.pkl
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -r output/run_shet-e-18/checkpoints/gen_100.pkl
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -r output/run_shet-e-19/checkpoints/gen_100.pkl
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -r output/run_shet-e-20/checkpoints/gen_100.pkl
+
+conda deactivate
