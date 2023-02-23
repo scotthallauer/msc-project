@@ -11,6 +11,7 @@ import random
 import sys
 import os
 import util.mapelites as mapelites
+import process.aggregate_archive as agga
 import process.plot_solutions as plts
 import process.plot_fitness as pltf
 import process.plot_archive as plta
@@ -28,7 +29,7 @@ if __name__ == "__main__":
     # get command type flag
     COMMAND_FLAG = sys.argv[1]
 
-    if COMMAND_FLAG != "-p":
+    if COMMAND_FLAG not in ["-a", "-p"]:
 
       # load configuration and checkpoint files
       if COMMAND_FLAG == "-s":
@@ -118,6 +119,14 @@ if __name__ == "__main__":
       print("Results exported.")
       exit(0)
 
+    # aggregate archives from multiple runs into a swarm-map
+    elif COMMAND_FLAG == "-a":
+      AGGREGATE_PREFIX = sys.argv[2]
+      AGGREGATE_GENERATION = sys.argv[3]
+      agga.aggregate(AGGREGATE_PREFIX, AGGREGATE_GENERATION)
+      exit(0)
+
+    # plot results in figures
     elif COMMAND_FLAG == "-p":
       GRAPH_TYPE = sys.argv[2] # archive, fitness, solutions
       if GRAPH_TYPE == "archive":
@@ -171,6 +180,7 @@ if __name__ == "__main__":
     print("Start Evolution:\tpython run.py -s <config file> <run id>")
     print("Resume Evolution:\tpython run.py -r <checkpoint file>")
     print("Export Results:\t\tpython run.py -e <checkpoint file>")
+    print("Aggregate Archives:\tpython run.py -a <aggregate prefix> <generation>")
     print("Plot Figures:\t\tpython run.py -p <graph type> [variant options]")
     print("View Simulation:\tpython run.py -v <checkpoint file>")
     exit(1)
