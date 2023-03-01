@@ -52,16 +52,28 @@ if __name__ == "__main__":
       NB_HIDDENS = CONFIG.get("dHiddenNodes", "int")
       NB_OUTPUTS = CONFIG.get("dOutputNodes", "int")
       GENOME_SIZE = (NB_INPUTS * NB_HIDDENS) + (NB_HIDDENS * NB_OUTPUTS)
-      if CONFIG.get("pEvolutionAlgorithm", "str").endswith("HET"):
+      if CONFIG.get("pEvolutionAlgorithm", "str").startswith("A"):
+        GENOME_SIZE = CONFIG.get("pNumberOfDogs", "int")
+        ARCHIVE_FILENAME = CONFIG.get("pSolutionArchiveFilename", "str")
+        with open(ARCHIVE_FILENAME, "rb") as ar_file:
+          ARCHIVE = pickle.load(ar_file)
+        CONTROLLERS = ARCHIVE["sol"]
+      elif CONFIG.get("pEvolutionAlgorithm", "str").endswith("HET"):
         GENOME_SIZE = GENOME_SIZE * CONFIG.get("pNumberOfDogs", "int")
 
       # define genetic operators to use
       toolbox = base.Toolbox()
-      toolbox.register("attribute", random.uniform, a=-1, b=1)
+      if CONFIG.get("pEvolutionAlgorithm", "str").startswith("A"):
+        toolbox.register("attribute", random.randint, a=0, b=len(CONTROLLERS)-1)
+      else:
+        toolbox.register("attribute", random.uniform, a=-1, b=1)
       toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attribute, n=GENOME_SIZE)
       toolbox.register("population", tools.initRepeat, list, toolbox.individual)
       toolbox.register("mate", tools.cxTwoPoint)
-      toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.05)
+      if CONFIG.get("pEvolutionAlgorithm", "str").startswith("A"):
+        toolbox.register("mutate", tools.mutUniformInt, low=0, up=len(CONTROLLERS)-1, indpb=0.1)
+      else:
+        toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.05)
       toolbox.register("select", tools.selTournament, tournsize=3)
       toolbox.register("evaluate", evaluator.execute)
 
@@ -162,7 +174,8 @@ if __name__ == "__main__":
       manager = multiprocessing.Manager()
       process_output = manager.dict()
       is_homogenous = CONFIG.get("pEvolutionAlgorithm", "str").endswith("HOM")
-      process = evaluator.IndividualEvaluator(0, TEMP_FILENAME, CHECKPOINT["rid"], 1, [elite], process_output, is_homogenous)
+      is_allocation = CONFIG.get("pEvolutionAlgorithm", "str").startswith("A")
+      process = evaluator.IndividualEvaluator(0, TEMP_FILENAME, CHECKPOINT["rid"], 1, [elite], process_output, is_homogenous, is_allocation)
       process.start()
       process.join()
       print(end='\x1b[2K') # clear line

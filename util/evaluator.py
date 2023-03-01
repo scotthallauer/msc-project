@@ -5,6 +5,7 @@ import util.categorise as categorise
 import util.globals as globals
 from util.config_reader import ConfigReader
 from monitor.progress import ProgressMonitor
+import pickle
 import random
 
 def execute(population: list, config_filename: str, run_id: int, nb_generations: int, start_generation: int, current_generation: int):
@@ -17,7 +18,8 @@ def execute(population: list, config_filename: str, run_id: int, nb_generations:
   portions = apportion(population, nb_processes)
   for i in range(nb_processes):
     is_homogenous = config.get("pEvolutionAlgorithm", "str").endswith("HOM")
-    process = IndividualEvaluator(i, config_filename, run_id, start_generation, portions[i], process_output, is_homogenous)
+    is_allocation = config.get("pEvolutionAlgorithm", "str").startswith("A")
+    process = IndividualEvaluator(i, config_filename, run_id, start_generation, portions[i], process_output, is_homogenous, is_allocation)
     processes.append(process)
     process.start()
   if config.get("pDynamicProgressOutput", "bool"):
@@ -49,20 +51,27 @@ def apportion(population: list, nb_processes: int):
 
 class IndividualEvaluator(multiprocessing.Process):
 
-  def __init__(self, id: int, config_filename: str, run_id: str, start_generation: int, individuals: list, process_output: dict, is_homogenous: bool):
+  def __init__(self, id: int, config_filename: str, run_id: str, start_generation: int, individuals: list, process_output: dict, is_homogenous: bool, is_allocation: bool):
     multiprocessing.Process.__init__(self)
     self.id = id
     self.config_filename = config_filename
+    self.controllers = None
     self.run_id = run_id
     self.start_generation = start_generation
     self.individuals = individuals
     self.process_output = process_output
     self.is_homogenous = is_homogenous
+    self.is_allocation = is_allocation
 
   def run(self):
     self.process_output[self.id] = []
     with suppressor():
       globals.init(self.config_filename, self.run_id, self.start_generation)
+      if self.is_allocation:
+        ar_filename = globals.config.get("pSolutionArchiveFilename", "str")
+        with open(ar_filename, "rb") as ar_file:
+          archive = pickle.load(ar_file)
+        self.controllers = archive["sol"]
       for individual in self.individuals:
         self.process_output[self.id] = self.process_output[self.id] + [self.__evaluate(individual)]
       globals.simulator.close()
@@ -74,7 +83,10 @@ class IndividualEvaluator(multiprocessing.Process):
     else:
       genomes = self.__individual_to_genomes(individual, globals.config.get("pNumberOfDogs", "int"))
       for dog in categorise.get_dogs():
-        dog.controller.set_genome(genomes.pop())
+        if self.is_allocation:
+          dog.controller.set_genome(self.controllers[genomes.pop()[0]])
+        else:
+          dog.controller.set_genome(genomes.pop())
     trial_scores = []
     behaviour_features = globals.config.get("pBehaviourFeatures", "[str]")
     trial_pen_behaviours = []
