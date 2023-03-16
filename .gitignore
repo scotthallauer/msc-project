@@ -2,6 +2,7 @@ build/
 **/.DS_Store
 **/*.code-workspace
 output/*/
+download/
 
 .idea/
 
