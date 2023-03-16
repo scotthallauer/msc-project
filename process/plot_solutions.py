@@ -13,7 +13,7 @@ def mean_flatten(array):
     output.append(stat.mean(array[i]))
   return output
 
-def graph(variant, runs=20):
+def graph(variant, runs=20, generations=200):
 
   MAX_RUNS = runs
 
@@ -34,11 +34,11 @@ def graph(variant, runs=20):
     folder_count = 0
 
     for folder in folders:
-      if os.path.exists(folder + "/checkpoints/gen_100.pkl"):
+      if os.path.exists(folder + "/checkpoints/gen_" + str(generations) + ".pkl"):
         flag = AGGREGATE_ARRAY is None
         if flag:
           AGGREGATE_ARRAY = []
-        for i in range(1, 101):
+        for i in range(1, generations+1):
           if flag:
             AGGREGATE_ARRAY.append([])
           CHECKPOINT_FILENAME = folder + "/checkpoints/gen_" + str(i) + ".pkl"
@@ -62,7 +62,7 @@ def graph(variant, runs=20):
           AGGREGATE_ARRAY[i-1].append(solution_count)
         folder_count += 1
       else:
-        print("Skipping run: " + CHECKPOINT_FILENAME + " is missing.")
+        print("Skipping run: " + (folder + "/checkpoints/gen_" + str(generations) + ".pkl") + " is missing.")
 
     AGGREGATE_ARRAY = mean_flatten(AGGREGATE_ARRAY)
 

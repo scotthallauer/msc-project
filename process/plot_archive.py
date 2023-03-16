@@ -16,7 +16,7 @@ def max_flatten(grid, axis):
     output.append([c[0] for c in plane[r].tolist()])
   return output
 
-def graph(prefix, runs=20):
+def graph(prefix, runs=20, generations=200):
 
   MAX_RUNS = runs
   AGGREGATE_PREFIX = prefix
@@ -31,7 +31,7 @@ def graph(prefix, runs=20):
   count = 0
 
   for folder in folders:
-    CHECKPOINT_FILENAME = folder + "/checkpoints/gen_100.pkl"
+    CHECKPOINT_FILENAME = folder + "/checkpoints/gen_" + str(generations) + ".pkl"
     if os.path.exists(CHECKPOINT_FILENAME):
       count += 1
       if "shom" in folder or "shet" in folder:

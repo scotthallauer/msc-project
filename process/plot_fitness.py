@@ -1,7 +1,10 @@
 import pickle
 import os
+import math
+import util.mapelites as mapelites
 import statistics as stat
 import matplotlib.pyplot as plt
+from util.config_reader import ConfigReader
 
 def mean_flatten(array):
   output = []
@@ -9,7 +12,7 @@ def mean_flatten(array):
     output.append(stat.mean(array[i]))
   return output
 
-def graph(variant, runs=20):
+def graph(variant, runs=20, generations=200):
 
   MAX_RUNS = runs
 
@@ -31,28 +34,54 @@ def graph(variant, runs=20):
     folder_count = 0
 
     for folder in folders:
-      CHECKPOINT_FILENAME = folder + "/checkpoints/gen_100.pkl"
-      if os.path.exists(CHECKPOINT_FILENAME):
+      if os.path.exists(folder + "/checkpoints/gen_" + str(generations) + ".pkl"):
         flag = AGGREGATE_MEAN_ARRAY is None
         if flag:
           AGGREGATE_MEAN_ARRAY = []
           AGGREGATE_MAX_ARRAY = []
-        with open(CHECKPOINT_FILENAME, "rb") as cp_file:
-          CHECKPOINT = pickle.load(cp_file)
-        LOGBOOK = CHECKPOINT["log"]
-        if "fitness" in LOGBOOK.chapters:
-          results = LOGBOOK.chapters["fitness"].select("avg", "max")
-        else:
-          results = LOGBOOK.select("avg", "max")
-        for i in range(len(results[0])):
+        for i in range(1, generations+1):
           if flag:
             AGGREGATE_MEAN_ARRAY.append([])
             AGGREGATE_MAX_ARRAY.append([])
-          AGGREGATE_MEAN_ARRAY[i].append(results[0][i])
-          AGGREGATE_MAX_ARRAY[i].append(results[1][i])
+          CHECKPOINT_FILENAME = folder + "/checkpoints/gen_" + str(i) + ".pkl"
+          if "shom" in folder or "shet" in folder:
+            with open(CHECKPOINT_FILENAME, "rb") as cp_file:
+              CHECKPOINT = pickle.load(cp_file)
+            POPULATION = CHECKPOINT["pop"]
+            total = 0
+            max = 0
+            sum = 0
+            for ind in POPULATION:
+              fitness = ind.fitness.values[0]
+              total += 1
+              sum += fitness
+              if fitness > max:
+                max = fitness
+          else:
+            with open(CHECKPOINT_FILENAME, "rb") as cp_file:
+              CHECKPOINT = pickle.load(cp_file)
+            POPULATION = CHECKPOINT["pop"]
+            CONFIG_FILENAME = CHECKPOINT["cfg"]
+            CONFIG = ConfigReader(CONFIG_FILENAME)
+            mapelites.init(CONFIG.get("pBehaviourFeatures", "[str]"), POPULATION)
+            fitness_grid = mapelites.grid.quality_array
+            total = 0
+            max = 0
+            sum = 0
+            for x in range(len(fitness_grid)):
+              for y in range(len(fitness_grid[x])):
+                for z in range(len(fitness_grid[x][y])):
+                  if not math.isnan(fitness_grid[x][y][z]):
+                    fitness = fitness_grid[x][y][z][0]
+                    total += 1
+                    sum += fitness
+                    if fitness > max:
+                      max = fitness
+          AGGREGATE_MEAN_ARRAY[i-1].append(sum/total)
+          AGGREGATE_MAX_ARRAY[i-1].append(max)
         folder_count += 1
       else:
-        print("Skipping run: " + CHECKPOINT_FILENAME + " is missing.")
+        print("Skipping run: " + (folder + "/checkpoints/gen_" + str(generations) + ".pkl") + " is missing.")
 
     AGGREGATE_MEAN_ARRAY = mean_flatten(AGGREGATE_MEAN_ARRAY)   
     AGGREGATE_MAX_ARRAY = mean_flatten(AGGREGATE_MAX_ARRAY)
