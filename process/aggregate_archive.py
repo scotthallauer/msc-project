@@ -4,7 +4,7 @@ import process.project_archive as prja
 import util.mapelites as mapelites
 from util.config_reader import ConfigReader
 
-def aggregate(prefix, gen=100):
+def aggregate(prefix, gen=200):
 
   AGGREGATE_PREFIX = prefix
   AGGREGATE_GENERATION = gen
