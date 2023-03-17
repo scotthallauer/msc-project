@@ -23,11 +23,6 @@ nproc=`cat $PBS_NODEFILE | wc -l`
 echo nproc is $nproc
 cat $PBS_NODEFILE
 
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/ashet/ashet-easy.properties ashet-e-11
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/ashet/ashet-easy.properties ashet-e-12
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/ashet/ashet-easy.properties ashet-e-13
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/ashet/ashet-easy.properties ashet-e-14
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/ashet/ashet-easy.properties ashet-e-15
 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/ashet/ashet-easy.properties ashet-e-16
 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/ashet/ashet-easy.properties ashet-e-17
 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/ashet/ashet-easy.properties ashet-e-18

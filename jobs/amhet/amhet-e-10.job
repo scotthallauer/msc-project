@@ -23,11 +23,6 @@ nproc=`cat $PBS_NODEFILE | wc -l`
 echo nproc is $nproc
 cat $PBS_NODEFILE
 
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-easy.properties amhet-e-01
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-easy.properties amhet-e-02
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-easy.properties amhet-e-03
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-easy.properties amhet-e-04
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-easy.properties amhet-e-05
 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-easy.properties amhet-e-06
 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-easy.properties amhet-e-07
 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-easy.properties amhet-e-08
