@@ -1,0 +1,37 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=24
+#PBS -P CSCI1142
+#PBS -q smp
+#PBS -l walltime=96:00:00
+#PBS -o /mnt/lustre/users/mscott/jobs/amhet-m-20.out
+#PBS -e /mnt/lustre/users/mscott/jobs/amhet-m-20.err
+#PBS -m abe
+#PBS -M scott.hallauer@gmail.com
+
+ulimit -s unlimited
+
+module purge
+module load chpc/BIOMODULES anaconda/3
+module load chpc/BIOMODULES roborobo4
+
+eval "$(conda shell.bash hook)"
+
+conda activate roborobo
+
+cd /mnt/lustre/users/mscott/msc-project
+nproc=`cat $PBS_NODEFILE | wc -l`
+echo nproc is $nproc
+cat $PBS_NODEFILE
+
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-medium.properties amhet-m-11
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-medium.properties amhet-m-12
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-medium.properties amhet-m-13
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-medium.properties amhet-m-14
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-medium.properties amhet-m-15
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-medium.properties amhet-m-16
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-medium.properties amhet-m-17
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-medium.properties amhet-m-18
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-medium.properties amhet-m-19
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python run.py -s config/amhet/amhet-medium.properties amhet-m-20
+
+conda deactivate
