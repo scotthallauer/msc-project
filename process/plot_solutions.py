@@ -21,6 +21,8 @@ def graph(variant, runs=20, generations=200):
     AGGREGATE_PREFIXES = ["shom-e", "shom-m", "shom-d", "mhom-e", "mhom-m", "mhom-d"]
   elif variant == "het":
     AGGREGATE_PREFIXES = ["shet-e", "shet-m", "shet-d", "mhet-e", "mhet-m", "mhet-d"]
+  elif variant == "ahet":
+    AGGREGATE_PREFIXES = ["ashet-e", "ashet-m", "ashet-d", "amhet-e", "amhet-m", "amhet-d"]
 
   for prefix in AGGREGATE_PREFIXES:
 
@@ -79,7 +81,7 @@ def graph(variant, runs=20, generations=200):
 
     print("Results plotted for " + str(folder_count) + " run(s).")
 
-  title = "Homogenous" if variant == "hom" else "Heterogenous"
+  title = "Homogeneous" if variant == "hom" else "Heterogeneous"
 
   plt.suptitle(title, weight="bold")
   plt.title("SSGA vs. MAP-Elites", fontsize=10)

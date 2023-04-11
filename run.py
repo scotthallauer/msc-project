@@ -93,7 +93,7 @@ if __name__ == "__main__":
       population         = toolbox.population(n=CONFIG.get("pPopulationSize", "int"))
       hall_of_fame       = tools.HallOfFame(maxsize=1)
       logbook            = tools.Logbook()
-      if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M"):
+      if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M") or CONFIG.get("pEvolutionAlgorithm", "str").startswith("AM"):
         mapelites.init(CONFIG.get("pBehaviourFeatures", "[str]")) 
 
     # resume a previous evolution simulation
@@ -102,7 +102,7 @@ if __name__ == "__main__":
       hall_of_fame       = CHECKPOINT["hof"]
       logbook            = CHECKPOINT["log"]
       random.setstate(CHECKPOINT["rnd"])
-      if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M"):
+      if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M") or CONFIG.get("pEvolutionAlgorithm", "str").startswith("AM"):
         mapelites.init(CONFIG.get("pBehaviourFeatures", "[str]"), population)
 
     # export all statistic results from checkpoint
@@ -209,7 +209,7 @@ if __name__ == "__main__":
       print("Starting...", end="\r", flush=True)
 
     # select the next generation individuals
-    if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M") and generation != 1:
+    if (CONFIG.get("pEvolutionAlgorithm", "str").startswith("M") or CONFIG.get("pEvolutionAlgorithm", "str").startswith("AM")) and generation != 1:
       offspring = toolbox.select(mapelites.grid, CONFIG.get("pPopulationSize", "int"))
     else:
       offspring = toolbox.select(population, CONFIG.get("pPopulationSize", "int"))
@@ -237,13 +237,13 @@ if __name__ == "__main__":
       ind.features = fit[1]
 
     # update the MAP-Elites grid or replace population with offspring
-    if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M"):
+    if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M") or CONFIG.get("pEvolutionAlgorithm", "str").startswith("AM"):
       mapelites.grid.update(offspring)
     else:
       population[:] = offspring
 
     # record stats
-    if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M"):
+    if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M") or CONFIG.get("pEvolutionAlgorithm", "str").startswith("AM"):
       hall_of_fame.update(mapelites.grid)
       record = mstats.compile(mapelites.grid)
     else:
@@ -265,7 +265,7 @@ if __name__ == "__main__":
     if generation % CONFIG.get("pCheckpointInterval", "int") == 0:
       cp = dict(
         rid=RUN_ID,
-        pop=(mapelites.grid if CONFIG.get("pEvolutionAlgorithm", "str").startswith("M") else population), 
+        pop=(mapelites.grid if (CONFIG.get("pEvolutionAlgorithm", "str").startswith("M") or CONFIG.get("pEvolutionAlgorithm", "str").startswith("AM")) else population), 
         gen=generation, 
         hof=hall_of_fame, 
         log=logbook,
