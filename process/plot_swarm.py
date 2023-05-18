@@ -41,8 +41,6 @@ def graph(runs=20, generations=200):
           with open(CHECKPOINT_FILENAME, "rb") as cp_file:
             CHECKPOINT = pickle.load(cp_file)
           POPULATION = CHECKPOINT["pop"]
-          CONFIG_FILENAME = CHECKPOINT["cfg"]
-          CONFIG = ConfigReader(CONFIG_FILENAME)
           swarm_sizes = []
           for individual in POPULATION:
             swarm_sizes.append(len(set(individual)))
