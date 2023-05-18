@@ -1,12 +1,13 @@
 import pickle
 import scipy.stats as stats
+import statistics as stat
 import process.project_archive as prja
 import os
 import util.mapelites as mapelites
 import math
 from util.config_reader import ConfigReader
 
-def calculate(variant, statistic, gen=100, runs=20):
+def calculate(variant, statistic, gen=200, runs=20):
 
   MAX_RUNS = runs
 
@@ -18,6 +19,8 @@ def calculate(variant, statistic, gen=100, runs=20):
     AGGREGATE_PREFIXES = ["shom-e", "shom-m", "shom-d", "shet-e", "shet-m", "shet-d"]
   elif variant == "m":
     AGGREGATE_PREFIXES = ["mhom-e", "mhom-m", "mhom-d", "mhet-e", "mhet-m", "mhet-d"]
+  elif variant == "a":
+    AGGREGATE_PREFIXES = ["ashet-e", "ashet-m", "ashet-d", "amhet-e", "amhet-m", "amhet-d"]
 
   AGGREGATE_DICT = {}
 
@@ -50,9 +53,10 @@ def calculate(variant, statistic, gen=100, runs=20):
             results = LOGBOOK.chapters["fitness"].select("max")
           else:
             results = LOGBOOK.select("max")
-          AGGREGATE_ARRAY.append(results[gen-1])
+          index = len(results)-1 if gen > len(results) else gen-1 # addresses bug for runs that were started with old logging and then resumed with new logging
+          AGGREGATE_ARRAY.append(results[index])
         elif statistic in ["solutions", "qdscore"]:
-          if "shom" in folder or "shet" in folder:
+          if "shom" in folder or "shet" in folder or "amhet" in folder:
             grid = prja.project(CHECKPOINT_FILENAME)
             fitness_grid = grid.quality_array
           else:
@@ -62,7 +66,7 @@ def calculate(variant, statistic, gen=100, runs=20):
             CONFIG_FILENAME = CHECKPOINT["cfg"]
             CONFIG = ConfigReader(CONFIG_FILENAME)
             mapelites.init(CONFIG.get("pBehaviourFeatures", "[str]"), POPULATION)
-            fitness_grid = mapelites.grid.quality_array          
+            fitness_grid = mapelites.grid.quality_array   
           solution_count = 0
           qd_score = 0
           for x in range(len(fitness_grid)):
@@ -88,10 +92,13 @@ def calculate(variant, statistic, gen=100, runs=20):
     elif variant in ["s", "m"]:
       group_a = variant + "hom-" + difficulty
       group_b = variant + "het-" + difficulty
+    elif variant in ["a"]:
+      group_a = variant + "shet-" + difficulty
+      group_b = variant + "mhet-" + difficulty
     result = stats.ttest_ind(AGGREGATE_DICT[group_a], AGGREGATE_DICT[group_b])
     print(group_a + " vs. " + group_b)
     print("*****************")
-    print(group_a + " values: " + str(AGGREGATE_DICT[group_a]))
-    print(group_b + " values: " + str(AGGREGATE_DICT[group_b]))
+    print(group_a + " values: " + str(AGGREGATE_DICT[group_a]) + ", mean = " + str(stat.mean(AGGREGATE_DICT[group_a])))
+    print(group_b + " values: " + str(AGGREGATE_DICT[group_b]) + ", mean = " + str(stat.mean(AGGREGATE_DICT[group_b])))
     print("t-test result: p=" + str(result.pvalue) + " (" + ("SIGNIFICANT" if result.pvalue < 0.05 else "NOT SIGNIFICANT") + ")")
     print()
