@@ -34,7 +34,7 @@ def graph(prefix, runs=20, generations=200):
     CHECKPOINT_FILENAME = folder + "/checkpoints/gen_" + str(generations) + ".pkl"
     if os.path.exists(CHECKPOINT_FILENAME):
       count += 1
-      if "shom" in folder or "shet" in folder:
+      if "shom" in folder or "shet" in folder or "amhet" in folder:
         grid = prja.project(CHECKPOINT_FILENAME)
         fitness_grid = grid.quality_array
       else: 
@@ -63,7 +63,7 @@ def graph(prefix, runs=20, generations=200):
       print("Skipping run: " + CHECKPOINT_FILENAME + " is missing.")
 
   plane_name = ["sd", "sp", "dp"]
-  plane_labels = [["Sheep Distance", "Dog Distance"], ["Sheep Distance", "Pen Distance"], ["Dog Distance", "Pen Distance"]]
+  plane_labels = [["Dog-Sheep Distance", "Dog-Dog Distance"], ["Dog-Sheep Distance", "Dog-Pen Distance"], ["Dog-Dog Distance", "Dog-Pen Distance"]]
 
   fig, axs = plt.subplots(ncols=4, gridspec_kw=dict(width_ratios=[4,4,4,0.2]), figsize=(15, 4.2))
   plt.suptitle(AGGREGATE_PREFIX, weight="bold")
@@ -75,7 +75,7 @@ def graph(prefix, runs=20, generations=200):
     # fix cut off lines
     grid.set_xlim(-0.1, 9.1)
     grid.set_ylim(-0.1, 9.1)
-  fig.colorbar(axs[-2].collections[0], cax=axs[-1])
+  fig.colorbar(axs[-2].collections[0], cax=axs[-1], label="Fitness")
   plt.savefig("output/archive_" + AGGREGATE_PREFIX + ".png", bbox_inches='tight', pad_inches=0.2)
 
   print("Results plotted for " + str(count) + " run(s).")
