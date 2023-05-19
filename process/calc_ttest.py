@@ -21,6 +21,14 @@ def calculate(variant, statistic, gen=200, runs=20):
     AGGREGATE_PREFIXES = ["mhom-e", "mhom-m", "mhom-d", "mhet-e", "mhet-m", "mhet-d"]
   elif variant == "a":
     AGGREGATE_PREFIXES = ["ashet-e", "ashet-m", "ashet-d", "amhet-e", "amhet-m", "amhet-d"]
+  elif variant == "shet":
+    AGGREGATE_PREFIXES = ["shet-e", "shet-m", "shet-d", "ashet-e", "ashet-m", "ashet-d"]
+  elif variant == "mhet":
+    AGGREGATE_PREFIXES = ["mhet-e", "mhet-m", "mhet-d", "amhet-e", "amhet-m", "amhet-d"]
+  elif variant == "shomhet":
+    AGGREGATE_PREFIXES = ["shom-e", "shom-m", "shom-d", "ashet-e", "ashet-m", "ashet-d"]
+  elif variant == "mhomhet":
+    AGGREGATE_PREFIXES = ["mhom-e", "mhom-m", "mhom-d", "amhet-e", "amhet-m", "amhet-d"]
 
   AGGREGATE_DICT = {}
 
@@ -79,6 +87,14 @@ def calculate(variant, statistic, gen=200, runs=20):
             AGGREGATE_ARRAY.append(solution_count)
           else:
             AGGREGATE_ARRAY.append(qd_score)
+        elif statistic == "swarm": # unique behaviours in swarm
+          with open(CHECKPOINT_FILENAME, "rb") as cp_file:
+            CHECKPOINT = pickle.load(cp_file)
+          POPULATION = CHECKPOINT["pop"]
+          swarm_sizes = []
+          for individual in POPULATION:
+            swarm_sizes.append(len(set(individual)))
+          AGGREGATE_ARRAY.append(stat.mean(swarm_sizes))
         folder_count += 1
       else:
         print("Skipping run: " + CHECKPOINT_FILENAME + " is missing.")
@@ -92,9 +108,18 @@ def calculate(variant, statistic, gen=200, runs=20):
     elif variant in ["s", "m"]:
       group_a = variant + "hom-" + difficulty
       group_b = variant + "het-" + difficulty
-    elif variant in ["a"]:
+    elif variant == "a":
       group_a = variant + "shet-" + difficulty
       group_b = variant + "mhet-" + difficulty
+    elif variant in ["shet", "mhet"]:
+      group_a = variant + "-" + difficulty
+      group_b = "a" + variant + "-" + difficulty
+    elif variant == "shomhet":
+      group_a = "shom-" + difficulty
+      group_b = "ashet-" + difficulty
+    elif variant == "mhomhet":
+      group_a = "mhom-" + difficulty
+      group_b = "amhet-" + difficulty
     result = stats.ttest_ind(AGGREGATE_DICT[group_a], AGGREGATE_DICT[group_b])
     print(group_a + " vs. " + group_b)
     print("*****************")
