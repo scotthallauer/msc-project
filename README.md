@@ -133,7 +133,7 @@ Once you have activated the roborobo conda environment (by running `conda activa
 | Plot Figures | `python run.py -p <graph type> [variant options]` |
 | View Simulation | `python run.py -v <checkpoint file>` |
 
-**Note:** The command to plot figures is expects a specific naming format for run IDs since its aggregate prefixes have been hardcoded (e.g. "shom-e", "shet-m", "mhom-d", "ashet-e", etc.). If you want to use a different naming format, please update the relevant `process/plot_*.py` files
+**Note:** The command to plot figures expects a specific naming format for run IDs since the aggregate prefixes have been hardcoded (e.g. "shom-e", "shet-m", "mhom-d", "ashet-e", etc.). If you want to use a different naming format, please update the relevant `process/plot_*.py` files.
 
 ## Cluster Environment
 
