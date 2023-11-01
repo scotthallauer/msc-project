@@ -2,7 +2,7 @@ build/
 **/.DS_Store
 **/*.code-workspace
 output/run_*/
-output/logs/
+output/runs/
 download/
 
 .idea/
