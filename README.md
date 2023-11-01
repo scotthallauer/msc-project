@@ -135,6 +135,8 @@ Once you have activated the roborobo conda environment (by running `conda activa
 
 **Note:** The command to plot figures expects a specific naming format for run IDs since the aggregate prefixes have been hardcoded (e.g. "shom-e", "shet-m", "mhom-d", "ashet-e", etc.). If you want to use a different naming format, please update the relevant `process/plot_*.py` files.
 
+**Note:** It is recommended that you set `pDynamicProgressOutput=true` in your corresponding `config/*.properties` while running evolution locally. This option dynamically outputs the progress for each generation and gives an estimate of time remaining. However, you will need to set this option to `false` again when running in a cluster environment.
+
 ## Cluster Environment
 
 **Note:** All of these instructions are intended for use on a Linux system that uses the PBS queuing system.
