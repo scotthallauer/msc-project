@@ -44,7 +44,7 @@ def graph(variant, runs=20, generations=200):
           if flag:
             AGGREGATE_ARRAY.append([])
           CHECKPOINT_FILENAME = folder + "/checkpoints/gen_" + str(i) + ".pkl"
-          if "shom" in folder or "shet" in folder:
+          if "shom" in folder or "shet" in folder or "amhet" in folder:
             grid = prja.project(CHECKPOINT_FILENAME)
             fitness_grid = grid.quality_array
           else:
